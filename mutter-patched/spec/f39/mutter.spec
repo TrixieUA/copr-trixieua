@@ -1,4 +1,3 @@
-%define _build_id_links none
 %define _disable_source_fetch 0
 
 %global glib_version 2.75.1
@@ -22,8 +21,8 @@ Release:       9%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
-URL:           http://www.gnome.org
-Source0:       http://download.gnome.org/sources/%{name}/45/%{name}-%{tarball_version}.tar.xz
+URL:           https://www.gnome.org
+Source0:       https://download.gnome.org/sources/%{name}/45/%{name}-%{tarball_version}.tar.xz
 
 # Work-around for OpenJDK's compliance test
 Patch0: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/0001-window-actor-Special-case-shaped-Java-windows.patch
