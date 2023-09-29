@@ -1,12 +1,4 @@
-## START: Set by rpmautospec
-## (rpmautospec version 0.3.5)
-## RPMAUTOSPEC: autorelease, autochangelog
-%define autorelease(e:s:pb:n) %{?-p:0.}%{lua:
-    release_number = 2;
-    base_release_number = tonumber(rpm.expand("%{?-b*}%{!?-b:1}"));
-    print(release_number + base_release_number - 1);
-}%{?-e:.%{-e*}}%{?-s:.%{-s*}}%{!?-n:%{?dist}}
-## END: Set by rpmautospec
+%define _disable_source_fetch 0
 
 %global glib_version 2.75.1
 %global gtk3_version 3.19.8
@@ -24,7 +16,7 @@
 
 Name:          mutter
 Version:       44.5
-Release:       %autorelease.tripplebuffer
+Release:       2%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -32,23 +24,23 @@ URL:           http://www.gnome.org
 Source0:       http://download.gnome.org/sources/%{name}/44/%{name}-%{tarball_version}.tar.xz
 
 # Work-around for OpenJDK's compliance test
-Patch0:        0001-window-actor-Special-case-shaped-Java-windows.patch
+Patch0: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/0001-window-actor-Special-case-shaped-Java-windows.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
-Patch1:        mutter-42.alpha-disable-tegra.patch
+Patch1: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter-42.alpha-disable-tegra.patch
 
 # https://pagure.io/fedora-workstation/issue/79
-Patch2:        0001-place-Always-center-initial-setup-fedora-welcome.patch
+Patch2: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/0001-place-Always-center-initial-setup-fedora-welcome.patch
 
 # The triple buffer himself
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
-Patch4:        1441.patch
-
-Patch5:        autorotate.patch
+Patch4: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/1441.patch
 
 # GPU optimizations for partial surface update 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2965
-Patch6:	       2965.patch
+Patch6:	https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/2965.patch
+
+Patch10: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/autorotate.patch
 
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
