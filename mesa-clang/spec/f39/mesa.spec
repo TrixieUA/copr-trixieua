@@ -65,17 +65,17 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        23.2.0-rc3
-Release:        4%{?dist}.clang
+Release:        2%{?dist}.clang
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
-URL:            http://www.mesa3d.org
+URL:            https://www.mesa3d.org
 
 Source0:        https://archive.mesa3d.org/mesa-%{version}.tar.xz
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
-Source1:        Mesa-MLAA-License-Clarification-Email.txt
+Source1: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f39/Mesa-MLAA-License-Clarification-Email.txt
 
-Patch10:        gnome-shell-glthread-disable.patch
+Patch10: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f39/gnome-shell-glthread-disable.patch
 
 BuildRequires:  meson >= 1.2.0
 BuildRequires:  gcc

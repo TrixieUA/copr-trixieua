@@ -57,9 +57,9 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        23.0.4
-Release:        %autorelease.clang
+Release:        3%{?dist}.clang
 License:        MIT
-URL:            http://www.mesa3d.org
+URL:            https://www.mesa3d.org
 
 Source0:        https://archive.mesa3d.org/mesa-%{version}.tar.xz
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
