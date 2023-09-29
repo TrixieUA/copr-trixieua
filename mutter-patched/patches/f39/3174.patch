@@ -1,0 +1,229 @@
+From 8c725fc9fcc989aeb59270869e0836f3372e45dd Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Mon, 7 Aug 2023 18:48:42 +0200
+Subject: [PATCH 1/3] clutter/frame-clock: Simplify next_presentation_time_us
+ calculation
+
+When more than one refresh interval has passed since
+last_presentation_time_us.
+
+I honestly can't tell if the previous calculation was correct or not,
+but I'm confident the new one is, and it's simpler.
+
+v2:
+* ASCII art diagram didn't make sense anymore, try to improve
+  (Ivan Molodetskikh)
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3174>
+---
+ clutter/clutter/clutter-frame-clock.c | 49 ++++++++-------------------
+ 1 file changed, 15 insertions(+), 34 deletions(-)
+
+diff --git a/clutter/clutter/clutter-frame-clock.c b/clutter/clutter/clutter-frame-clock.c
+index 30cc6fb12a..207a607a78 100644
+--- a/clutter/clutter/clutter-frame-clock.c
++++ b/clutter/clutter/clutter-frame-clock.c
+@@ -511,48 +511,29 @@ calculate_next_update_time_us (ClutterFrameClock *frame_clock,
+    */
+   if (next_presentation_time_us < now_us)
+     {
+-      int64_t presentation_phase_us;
+       int64_t current_phase_us;
+-      int64_t current_refresh_interval_start_us;
+ 
+       /*
+        * Let's say we're just past next_presentation_time_us.
+        *
+-       * First, we compute presentation_phase_us. Real presentation times don't
+-       * have to be exact multiples of refresh_interval_us and
+-       * presentation_phase_us represents this difference. Next, we compute
+-       * current phase and the refresh interval start corresponding to now_us.
+-       * Finally, add presentation_phase_us and a refresh interval to get the
+-       * next presentation after now_us.
+-       *
+-       *        last_presentation_time_us
+-       *       /       next_presentation_time_us
+-       *      /       /   now_us
+-       *     /       /   /   new next_presentation_time_us
+-       * |--|-------|---o---|-------|--> presentation times
+-       * |        __|
+-       * |       |presentation_phase_us
+-       * |       |
+-       * |       |     now_us - presentation_phase_us
+-       * |       |    /
+-       * |-------|---o---|-------|-----> integer multiples of refresh_interval_us
+-       * |       \__/
+-       * |       |current_phase_us
+-       * |       \
+-       * |        current_refresh_interval_start_us
+-       * 0
++       * First, we calculate current_phase_us, corresponding to the time since
++       * the last integer multiple of the refresh interval passed after the last
++       * presentation time. Subtracting this phase from now_us and adding a
++       * refresh interval gets us the next possible presentation time after
++       * now_us.
+        *
++       *     last_presentation_time_us
++       *    /       next_presentation_time_us
++       *   /       /   now_us
++       *  /       /   /    new next_presentation_time_us
++       * |-------|---o---|-------|--> possible presentation times
++       *          \_/     \_____/
++       *          /           \
++       * current_phase_us      refresh_interval_us
+        */
+ 
+-      presentation_phase_us = last_presentation_time_us % refresh_interval_us;
+-      current_phase_us = (now_us - presentation_phase_us) % refresh_interval_us;
+-      current_refresh_interval_start_us =
+-        now_us - presentation_phase_us - current_phase_us;
+-
+-      next_presentation_time_us =
+-        current_refresh_interval_start_us +
+-        presentation_phase_us +
+-        refresh_interval_us;
++      current_phase_us = (now_us - last_presentation_time_us) % refresh_interval_us;
++      next_presentation_time_us = now_us - current_phase_us + refresh_interval_us;
+     }
+ 
+   if (frame_clock->is_next_presentation_time_valid)
+-- 
+GitLab
+
+
+From 984d45855804868fe598f59579ed3ed54c690565 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Tue, 15 Aug 2023 16:06:49 +0200
+Subject: [PATCH 2/3] tests/clutter/frame-clock*: Use
+ clutter_frame_get_target_presentation_time
+
+Instead of g_get_monotonic_time. This makes sure last_presentation_time_us
+advances by refresh_interval_us.
+
+Doesn't affect test results at this point, but it will with the next
+commit.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3174>
+---
+ src/tests/clutter/conform/frame-clock-timeline.c | 6 +++++-
+ src/tests/clutter/conform/frame-clock.c          | 7 ++++++-
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/src/tests/clutter/conform/frame-clock-timeline.c b/src/tests/clutter/conform/frame-clock-timeline.c
+index 1756803279..b78021eac7 100644
+--- a/src/tests/clutter/conform/frame-clock-timeline.c
++++ b/src/tests/clutter/conform/frame-clock-timeline.c
+@@ -12,11 +12,15 @@ timeline_frame_clock_frame (ClutterFrameClock *frame_clock,
+   ClutterFrameInfo frame_info;
+ 
+   frame_info = (ClutterFrameInfo) {
+-    .presentation_time = g_get_monotonic_time (),
+     .refresh_rate = refresh_rate,
+     .flags = CLUTTER_FRAME_INFO_FLAG_NONE,
+     .sequence = 0,
+   };
++
++  if (!clutter_frame_get_target_presentation_time (frame,
++                                                   &frame_info.presentation_time))
++    frame_info.presentation_time = g_get_monotonic_time ();
++
+   clutter_frame_clock_notify_presented (frame_clock, &frame_info);
+   clutter_frame_clock_schedule_update (frame_clock);
+ 
+diff --git a/src/tests/clutter/conform/frame-clock.c b/src/tests/clutter/conform/frame-clock.c
+index d82c70799a..5fbdd05649 100644
+--- a/src/tests/clutter/conform/frame-clock.c
++++ b/src/tests/clutter/conform/frame-clock.c
+@@ -190,6 +190,7 @@ immediate_frame_clock_frame (ClutterFrameClock *frame_clock,
+                              gpointer           user_data)
+ {
+   GMainLoop *main_loop = user_data;
++  int64_t target_presentation_time_us;
+   ClutterFrameInfo frame_info;
+ 
+   g_assert_cmpint (clutter_frame_get_count (frame), ==, expected_frame_count);
+@@ -204,7 +205,11 @@ immediate_frame_clock_frame (ClutterFrameClock *frame_clock,
+ 
+   test_frame_count--;
+ 
+-  init_frame_info (&frame_info, g_get_monotonic_time ());
++  if (!clutter_frame_get_target_presentation_time (frame,
++                                                   &target_presentation_time_us))
++    target_presentation_time_us = 0;
++
++  init_frame_info (&frame_info, target_presentation_time_us);
+   clutter_frame_clock_notify_presented (frame_clock, &frame_info);
+   g_idle_add (schedule_update_idle, frame_clock);
+ 
+-- 
+GitLab
+
+
+From d4e20fad19fb842d891901cd21a4d917735c12f1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Thu, 10 Aug 2023 16:37:16 +0200
+Subject: [PATCH 3/3] clutter/frame-clock: Start next update ASAP after idle
+ period
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+For frame updates in response to sporadic user interaction, this results
+in input → output latency somewhere between the minimum possible and the
+minimum plus the length of one display refresh cycle (assuming the frame
+update can complete within a refresh cycle).
+
+Applying a max_render_time based deadline which corresponds to higher
+than the minimum possible latency would result in higher effective
+minimum latency for sporadic user interaction.
+
+This was discovered by Ivan Molodetskikh, based on measurements
+described in https://mastodon.online/@YaLTeR/110848066454900941 .
+
+v2:
+* Set min_render_time_allowed_us = 0 as well, to avoid unthrottled
+  frame events. (Robert Mader)
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3174>
+---
+ clutter/clutter/clutter-frame-clock.c | 23 ++++++++++++++++++-----
+ 1 file changed, 18 insertions(+), 5 deletions(-)
+
+diff --git a/clutter/clutter/clutter-frame-clock.c b/clutter/clutter/clutter-frame-clock.c
+index 207a607a78..ab493e0b0d 100644
+--- a/clutter/clutter/clutter-frame-clock.c
++++ b/clutter/clutter/clutter-frame-clock.c
+@@ -566,12 +566,25 @@ calculate_next_update_time_us (ClutterFrameClock *frame_clock,
+         }
+     }
+ 
+-  while (next_presentation_time_us < now_us + min_render_time_allowed_us)
+-    next_presentation_time_us += refresh_interval_us;
++  if (next_presentation_time_us != last_presentation_time_us + refresh_interval_us)
++    {
++      /* There was an idle period since the last presentation, so there seems
++       * be no constantly updating actor. In this case it's best to start
++       * working on the next update ASAP, this results in lowest average latency
++       * for sporadic user input.
++       */
++      next_update_time_us = now_us;
++      min_render_time_allowed_us = 0;
++    }
++  else
++    {
++      while (next_presentation_time_us < now_us + min_render_time_allowed_us)
++        next_presentation_time_us += refresh_interval_us;
+ 
+-  next_update_time_us = next_presentation_time_us - max_render_time_allowed_us;
+-  if (next_update_time_us < now_us)
+-    next_update_time_us = now_us;
++      next_update_time_us = next_presentation_time_us - max_render_time_allowed_us;
++      if (next_update_time_us < now_us)
++        next_update_time_us = now_us;
++    }
+ 
+   *out_next_update_time_us = next_update_time_us;
+   *out_next_presentation_time_us = next_presentation_time_us;
+-- 
+GitLab
+
