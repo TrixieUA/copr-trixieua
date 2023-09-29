@@ -1,3 +1,4 @@
+%define _build_id_links none
 %define _disable_source_fetch 0
 
 %global glib_version 2.75.1
