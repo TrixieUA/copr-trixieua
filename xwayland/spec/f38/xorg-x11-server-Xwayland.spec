@@ -60,7 +60,7 @@ BuildRequires: pkgconfig(libxcvt)
 BuildRequires: pkgconfig(libdecor-0) >= 0.1.1
 BuildRequires: pkgconfig(liboeffis-1.0) >= 1.0.0
 BuildRequires: pkgconfig(libei-1.0) >= 1.0.0
-BuildRequires: xorg-x11-proto-devel >= 2023.2-1
+BuildRequires: xorg-x11-proto-devel
 
 BuildRequires: mesa-libGL-devel >= 9.2
 BuildRequires: mesa-libEGL-devel
