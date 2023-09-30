@@ -1,0 +1,290 @@
+From e25d1a5095f2267ba0c15396784abb7a99881624 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Thu, 11 May 2023 17:52:49 +0200
+Subject: [PATCH 1/2] xwayland: Add xwl_glamor_pixmap_is_from_fds
+
+Determines whether or not the pixmap was created by importing dma-buf
+file descriptors.
+
+Will be used by the next commit.
+---
+ hw/xwayland/xwayland-glamor-gbm.c | 18 +++++++++++++++---
+ hw/xwayland/xwayland-glamor.c     | 11 +++++++++++
+ hw/xwayland/xwayland-glamor.h     |  6 ++++++
+ 3 files changed, 32 insertions(+), 3 deletions(-)
+
+diff --git a/hw/xwayland/xwayland-glamor-gbm.c b/hw/xwayland/xwayland-glamor-gbm.c
+index 4086e78ba2..d0748c2c9a 100644
+--- a/hw/xwayland/xwayland-glamor-gbm.c
++++ b/hw/xwayland/xwayland-glamor-gbm.c
+@@ -69,6 +69,7 @@ struct xwl_pixmap {
+     EGLImage image;
+     unsigned int texture;
+     struct gbm_bo *bo;
++    Bool from_fds;
+     Bool implicit_modifier;
+ };
+ 
+@@ -118,7 +119,7 @@ is_device_path_render_node (const char *device_path)
+ static PixmapPtr
+ xwl_glamor_gbm_create_pixmap_for_bo(ScreenPtr screen, struct gbm_bo *bo,
+                                     int depth,
+-                                    Bool implicit_modifier)
++                                    Bool implicit_modifier, Bool from_fds)
+ {
+     PixmapPtr pixmap;
+     struct xwl_pixmap *xwl_pixmap;
+@@ -190,6 +191,7 @@ xwl_glamor_gbm_create_pixmap_for_bo(ScreenPtr screen, struct gbm_bo *bo,
+     xwl_glamor_egl_make_current(xwl_screen);
+     xwl_pixmap->bo = bo;
+     xwl_pixmap->buffer = NULL;
++    xwl_pixmap->from_fds = from_fds;
+     xwl_pixmap->implicit_modifier = implicit_modifier;
+ 
+ #ifdef GBM_BO_FD_FOR_PLANE
+@@ -336,7 +338,8 @@ xwl_glamor_gbm_create_pixmap_internal(struct xwl_screen *xwl_screen,
+         }
+ 
+         if (bo) {
+-            pixmap = xwl_glamor_gbm_create_pixmap_for_bo(xwl_screen->screen, bo, depth, implicit);
++            pixmap = xwl_glamor_gbm_create_pixmap_for_bo(xwl_screen->screen, bo, depth,
++                                                         implicit, FALSE);
+ 
+             if (!pixmap) {
+                 gbm_bo_destroy(bo);
+@@ -553,6 +556,14 @@ xwl_glamor_gbm_get_wl_buffer_for_pixmap(PixmapPtr pixmap)
+     return xwl_pixmap->buffer;
+ }
+ 
++static Bool
++xwl_glamor_gbm_pixmap_is_from_fds(PixmapPtr pixmap)
++{
++    struct xwl_pixmap *xwl_pixmap = xwl_pixmap_get(pixmap);
++
++    return xwl_pixmap && xwl_pixmap->from_fds;
++}
++
+ static void
+ xwl_glamor_gbm_cleanup(struct xwl_screen *xwl_screen)
+ {
+@@ -722,7 +733,7 @@ glamor_pixmap_from_fds(ScreenPtr screen, CARD8 num_fds, const int *fds,
+     if (bo == NULL)
+        goto error;
+ 
+-    pixmap = xwl_glamor_gbm_create_pixmap_for_bo(screen, bo, depth, implicit);
++    pixmap = xwl_glamor_gbm_create_pixmap_for_bo(screen, bo, depth, implicit, TRUE);
+     if (pixmap == NULL) {
+        gbm_bo_destroy(bo);
+        goto error;
+@@ -1246,6 +1257,7 @@ xwl_glamor_init_gbm(struct xwl_screen *xwl_screen)
+     xwl_screen->gbm_backend.init_egl = xwl_glamor_gbm_init_egl;
+     xwl_screen->gbm_backend.init_screen = xwl_glamor_gbm_init_screen;
+     xwl_screen->gbm_backend.get_wl_buffer_for_pixmap = xwl_glamor_gbm_get_wl_buffer_for_pixmap;
++    xwl_screen->gbm_backend.pixmap_is_from_fds = xwl_glamor_gbm_pixmap_is_from_fds;
+     xwl_screen->gbm_backend.check_flip = NULL;
+     xwl_screen->gbm_backend.get_main_device = xwl_gbm_get_main_device;
+     xwl_screen->gbm_backend.is_available = TRUE;
+diff --git a/hw/xwayland/xwayland-glamor.c b/hw/xwayland/xwayland-glamor.c
+index 3c03b2523c..1e7029ab3e 100644
+--- a/hw/xwayland/xwayland-glamor.c
++++ b/hw/xwayland/xwayland-glamor.c
+@@ -865,6 +865,17 @@ xwl_glamor_pixmap_get_wl_buffer(PixmapPtr pixmap)
+     return NULL;
+ }
+ 
++Bool
++xwl_glamor_pixmap_is_from_fds(PixmapPtr pixmap)
++{
++    struct xwl_screen *xwl_screen = xwl_screen_get(pixmap->drawable.pScreen);
++
++    if (xwl_screen->egl_backend->pixmap_is_from_fds)
++        return xwl_screen->egl_backend->pixmap_is_from_fds(pixmap);
++
++    return FALSE;
++}
++
+ Bool
+ xwl_glamor_post_damage(struct xwl_window *xwl_window,
+                        PixmapPtr pixmap, RegionPtr region)
+diff --git a/hw/xwayland/xwayland-glamor.h b/hw/xwayland/xwayland-glamor.h
+index 313d7faf17..cbdacc5a7c 100644
+--- a/hw/xwayland/xwayland-glamor.h
++++ b/hw/xwayland/xwayland-glamor.h
+@@ -80,6 +80,11 @@ struct xwl_egl_backend {
+      */
+     struct wl_buffer *(*get_wl_buffer_for_pixmap)(PixmapPtr pixmap);
+ 
++    /* Called by Xwayland to check whether this pixmap was created by importing
++     * dma-buf file descriptors.
++     */
++    Bool (*pixmap_is_from_fds)(PixmapPtr pixmap);
++
+     /* Called by Xwayland to perform any pre-wl_surface damage routines
+      * that are required by the backend. If your backend is poorly
+      * designed and lacks the ability to render directly to a surface,
+@@ -123,6 +128,7 @@ Bool xwl_dmabuf_setup_feedback_for_window(struct xwl_window *xwl_window);
+ Bool xwl_screen_set_dmabuf_interface(struct xwl_screen *xwl_screen,
+                                      uint32_t id, uint32_t version);
+ struct wl_buffer *xwl_glamor_pixmap_get_wl_buffer(PixmapPtr pixmap);
++Bool xwl_glamor_pixmap_is_from_fds(PixmapPtr pixmap);
+ void xwl_glamor_init_wl_registry(struct xwl_screen *xwl_screen,
+                                  struct wl_registry *registry,
+                                  uint32_t id, const char *interface,
+-- 
+GitLab
+
+
+From 1b7bd5be91a40172843312f6c03f0aa6a7491112 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Thu, 11 May 2023 18:12:27 +0200
+Subject: [PATCH 2/2] xwayland: Poll dma-buf fds in xwl_present_pixmap
+
+Wait for all of them to become readable before processing the
+PresentPixmap request. This corresponds to the GPU drawing to the buffer
+having completed.
+
+This has various benefits, e.g. the target MSC calculation can be more
+accurate in some cases.
+
+A potential downside is that it may impact the frame rate of very light
+clients such as vblank_mode=0 glxgears. Shouldn't affect real-world apps
+though.
+---
+ hw/xwayland/xwayland-present.c | 106 +++++++++++++++++++++++++++++++++
+ 1 file changed, 106 insertions(+)
+
+diff --git a/hw/xwayland/xwayland-present.c b/hw/xwayland/xwayland-present.c
+index 189e7cfd65..6f12ea66fd 100644
+--- a/hw/xwayland/xwayland-present.c
++++ b/hw/xwayland/xwayland-present.c
+@@ -27,7 +27,9 @@
+ 
+ #include <windowstr.h>
+ #include <present.h>
++#include <xserver_poll.h>
+ 
++#include "xwayland-glamor.h"
+ #include "xwayland-present.h"
+ #include "xwayland-screen.h"
+ #include "xwayland-window.h"
+@@ -898,6 +900,105 @@ xwl_present_execute(present_vblank_ptr vblank, uint64_t ust, uint64_t crtc_msc)
+     present_execute_post(vblank, ust, crtc_msc);
+ }
+ 
++struct xwl_present_busy_dmabufs {
++    ClientPtr client;
++    int fds[4];
++};
++
++/* Called when a dma-buf fd has become readable */
++static void 
++xwl_present_dmabuf_ready(int fd, int ready, void *data)
++{
++    struct xwl_present_busy_dmabufs *busy_dmabufs = data;
++    int i, num_fds;
++
++    for (i = 0, num_fds = 0; i < 4; i++) {
++        if (busy_dmabufs->fds[i] == fd)
++            busy_dmabufs->fds[i] = -1;
++        else if (busy_dmabufs->fds[i] >= 0)
++            num_fds++;
++    }
++
++    RemoveNotifyFd(fd);
++    close(fd);
++
++    if (num_fds > 0)
++        return;
++
++    /* All dma-buf fds have become readable, resume processing client requests */
++    AttendClient(busy_dmabufs->client);
++    free(busy_dmabufs);
++}
++
++/* Wait for all dma-buf fds to become readable before processing the
++ * PresentPixmap request. This corresponds to the GPU drawing to the buffer
++ * having completed.
++ */
++static Bool
++xwl_present_is_dmabuf_busy(PixmapPtr pixmap)
++{
++    ScreenPtr screen = pixmap->drawable.pScreen;
++    ClientPtr client = GetCurrentClient();
++    struct xwl_present_busy_dmabufs *busy_dmabufs;
++    int fds[4], num_fds;
++    uint32_t strides[4], offsets[4];
++    uint64_t modifier;
++    int i, j;
++
++    num_fds = glamor_egl_fds_from_pixmap(screen, pixmap, fds, strides, offsets, &modifier);
++    if (num_fds <= 0)
++        return FALSE;
++
++    busy_dmabufs = XNFalloc(sizeof(struct xwl_present_busy_dmabufs));
++
++    for (i = num_fds; i < 4; i++)
++        busy_dmabufs->fds[i] = -1;
++
++    /* Deduplicate fds */
++    for (i = 0; i < num_fds; i++) {
++        for (j = 0; j < i; j++) {
++            if (busy_dmabufs->fds[j] == fds[i])
++                break;
++        }
++
++        if (j == i)
++            busy_dmabufs->fds[i] = fds[i];
++        else
++            busy_dmabufs->fds[i] = -1;
++    }
++
++    for (i = 0, num_fds = 0; i < 4; i++) {
++        struct pollfd poll_fd = { .fd = busy_dmabufs->fds[i] };
++
++        if (poll_fd.fd < 0)
++            continue;
++
++        poll_fd.events = POLLIN;
++        if (xserver_poll(&poll_fd, 1, 0) > 0) {
++            close(busy_dmabufs->fds[i]);
++            busy_dmabufs->fds[i] = -1;
++            continue;
++        }
++
++        if (busy_dmabufs->fds[i] < MAXCLIENTS)
++            busy_dmabufs->fds[i] = os_move_fd(busy_dmabufs->fds[i]);
++
++        num_fds++;
++        SetNotifyFd(busy_dmabufs->fds[i], xwl_present_dmabuf_ready, X_NOTIFY_READ, busy_dmabufs);
++    }
++
++    if (num_fds == 0) {
++        free(busy_dmabufs);
++        return FALSE;
++    }
++
++    busy_dmabufs->client = client;
++    ResetCurrentRequest(client);
++    client->sequence--;
++    IgnoreClient(client);
++    return TRUE;
++}
++
+ static int
+ xwl_present_pixmap(WindowPtr window,
+                    PixmapPtr pixmap,
+@@ -929,6 +1030,11 @@ xwl_present_pixmap(WindowPtr window,
+     if (!window_priv)
+         return BadAlloc;
+ 
++    if (pixmap &&
++        xwl_glamor_pixmap_is_from_fds(pixmap) &&
++        xwl_present_is_dmabuf_busy(pixmap))
++        return Success;
++
+     target_crtc = xwl_present_get_crtc(screen_priv, window);
+ 
+     ret = xwl_present_get_ust_msc(screen, window, &ust, &crtc_msc);
+-- 
+GitLab
+
