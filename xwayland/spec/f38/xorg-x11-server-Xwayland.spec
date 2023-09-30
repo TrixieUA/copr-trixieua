@@ -117,6 +117,7 @@ rm -Rf $RPM_BUILD_ROOT%{_localstatedir}/lib/xkb
 %files
 %{_bindir}/Xwayland
 %{_mandir}/man1/Xwayland.1*
+%{_datadir}/applications/org.freedesktop.Xwayland.desktop
 
 %files devel
 %{_libdir}/pkgconfig/xwayland.pc
