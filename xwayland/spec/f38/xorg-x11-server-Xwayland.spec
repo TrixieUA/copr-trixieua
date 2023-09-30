@@ -89,7 +89,7 @@ The development package provides the developmental files which are
 necessary for developing Wayland compositors using Xwayland.
 
 %prep
-%autosetup -N -S git_am -n %{pkgname}
+%autosetup -N -S git_am -n %{pkgname}-%{version}
 
 
 %build
