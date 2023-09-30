@@ -12,7 +12,7 @@ Release:   3%{?dist}
 URL:       http://www.x.org
 Source0:   https://www.x.org/pub/individual/xserver/%{pkgname}-%{version}.tar.xz
 
-Patch0:
+Patch0: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/xwayland/patches/f38/1120.patch
 
 License:   MIT
 
