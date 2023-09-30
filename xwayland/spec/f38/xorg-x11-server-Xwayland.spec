@@ -7,12 +7,12 @@
 Summary:   Xwayland
 Name:      xorg-x11-server-Xwayland
 Version:   23.1.2
-Release:   3%{?dist}.clang
+Release:   3%{?dist}
 
 URL:       http://www.x.org
 Source0:   https://www.x.org/pub/individual/xserver/%{pkgname}-%{version}.tar.xz
 
-Patch0: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/xwayland/patches/f38/1120.patch
+Patch0:
 
 License:   MIT
 
@@ -26,15 +26,13 @@ BuildRequires: git-core
 BuildRequires: meson
 
 BuildRequires: wayland-devel
-BuildRequires: desktop-file-utils
-
-BuildRequires: pkgconfig(wayland-client) >= 1.21.0
-BuildRequires: pkgconfig(wayland-protocols) >= 1.30
+BuildRequires: pkgconfig(wayland-client) >= 1.18.0
+BuildRequires: pkgconfig(wayland-protocols)
 BuildRequires: pkgconfig(wayland-eglstream-protocols)
 
 BuildRequires: pkgconfig(epoxy) >= 1.5.5
 BuildRequires: pkgconfig(fontenc)
-BuildRequires: pkgconfig(libdrm) >= 2.4.89
+BuildRequires: pkgconfig(libdrm) >= 2.4.0
 BuildRequires: pkgconfig(libssl)
 BuildRequires: pkgconfig(libtirpc)
 BuildRequires: pkgconfig(pixman-1)
@@ -57,10 +55,7 @@ BuildRequires: pkgconfig(xtrans) >= 1.3.2
 BuildRequires: pkgconfig(xtst)
 BuildRequires: pkgconfig(xv)
 BuildRequires: pkgconfig(libxcvt)
-BuildRequires: pkgconfig(libdecor-0) >= 0.1.1
-BuildRequires: pkgconfig(liboeffis-1.0) >= 1.0.0
-BuildRequires: pkgconfig(libei-1.0) >= 1.0.0
-BuildRequires: xorg-x11-proto-devel
+BuildRequires: xorg-x11-proto-devel >= 7.7-10
 
 BuildRequires: mesa-libGL-devel >= 9.2
 BuildRequires: mesa-libEGL-devel
@@ -88,18 +83,17 @@ Xwayland is an X server for running X clients under Wayland.
 %package devel
 Summary: Development package
 Requires: pkgconfig
-Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
 The development package provides the developmental files which are
 necessary for developing Wayland compositors using Xwayland.
 
 %prep
-%autosetup -S git_am -n %{pkgname}-%{version}
+%autosetup -N -S git_am -n %{pkgname}
+
 
 %build
 %meson \
-	%{?gitdate:-Dxwayland=true -D{xorg,xnest,xvfb,udev}=false} \
         -Dxwayland_eglstream=true \
         -Ddefault_font_path=%{default_font_path} \
         -Dbuilder_string="Build ID: %{name} %{version}-%{release}" \
@@ -120,13 +114,9 @@ rm -Rf $RPM_BUILD_ROOT%{_includedir}/xorg
 rm -Rf $RPM_BUILD_ROOT%{_datadir}/aclocal
 rm -Rf $RPM_BUILD_ROOT%{_localstatedir}/lib/xkb
 
-%check
-desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
-
 %files
 %{_bindir}/Xwayland
 %{_mandir}/man1/Xwayland.1*
-%{_datadir}/applications/org.freedesktop.Xwayland.desktop
 
 %files devel
 %{_libdir}/pkgconfig/xwayland.pc
