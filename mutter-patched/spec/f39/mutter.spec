@@ -16,8 +16,8 @@
 %global toolchain clang
 
 Name:          mutter
-Version:       45.0
-Release:       14%{?dist}.tripplebuffer
+Version:       45.1
+Release:       2%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -35,17 +35,19 @@ Patch2: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-pat
 
 Patch3: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
 
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329	
+# Modified to add the change from
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837	
+# which solves the problems reported with #3329 alone
+Patch4: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/0001-modified-3329.patch
+
 # Draft: Dynamic triple/double buffering (v4) 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
-Patch4: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/1441.patch
+Patch5: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/1441.patch
 
 # backends/native: Main thread rt-scheduler: experimental feature no more 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3296
-Patch5: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/3296.patch
-
-# clutter/frame-clock: Start next update ASAP after idle period
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3174
-Patch6: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/3174.patch
+Patch6: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/3296.patch
 
 Patch10: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/autorotate.patch
 
