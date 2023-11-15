@@ -12,11 +12,11 @@ URL:            https://wiki.gnome.org/Projects/GnomeShell
 Source0:        https://download.gnome.org/sources/gnome-shell/45/%{name}-%{tarball_version}.tar.xz
 
 # Replace Epiphany with Firefox in the default favourite apps list
-Patch: gnome-shell-favourite-apps-firefox.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/gnome-shell/gnome-shell-favourite-apps-firefox.patch
 
 # Some users might have a broken PAM config, so we really need this
 # downstream patch to stop trying on configuration errors.
-Patch:https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/gnome-shell/0001-gdm-Work-around-failing-fingerprint-auth.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/gnome-shell/0001-gdm-Work-around-failing-fingerprint-auth.patch
 
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/gnome-shell/0001-status-keyboard-Add-a-catch-around-reload-call.patch
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/gnome-shell/0002-status-keyboard-Load-keyboard-from-system-settings-i.patch
