@@ -9,47 +9,39 @@
 %global pipewire_version 0.3.33
 %global lcms2_version 2.6
 %global colord_version 1.4.5
-%global libei_version 1.0.0
-%global mutter_api_version 13
-
-%global tarball_version %%(echo %{version} | tr '~' '.')
+%global mutter_api_version 12
 %global toolchain clang
 
+%global tarball_version %%(echo %{version} | tr '~' '.')
+
 Name:          mutter
-Version:       45.1
-Release:       3%{?dist}.tripplebuffer
+Version:       44.6
+Release:       2%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
 URL:           https://www.gnome.org
-Source0:       https://download.gnome.org/sources/%{name}/45/%{name}-%{tarball_version}.tar.xz
+Source0:       https://download.gnome.org/sources/%{name}/44/%{name}-%{tarball_version}.tar.xz
 
 # Work-around for OpenJDK's compliance test
-Patch0: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/0001-window-actor-Special-case-shaped-Java-windows.patch
+Patch0: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
-Patch1: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter-42.alpha-disable-tegra.patch
+Patch1: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter-42.alpha-disable-tegra.patch
 
 # https://pagure.io/fedora-workstation/issue/79
-Patch2: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/0001-place-Always-center-initial-setup-fedora-welcome.patch
+Patch2: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
 
-Patch3: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329	
-# Modified to add the change from
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837	
-# which solves the problems reported with #3329 alone
-Patch4: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/0001-modified-3329.patch
-
-# Draft: Dynamic triple/double buffering (v4) 
+# The triple buffer himself
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
-Patch5: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/1441.patch
+Patch4: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/1441.patch
 
-# backends/native: Main thread rt-scheduler: experimental feature no more 
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3296
-Patch6: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/3296.patch
+# GPU optimizations for partial surface update 
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2965
+Patch6:	https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/2965.patch
 
-Patch10: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/autorotate.patch
+Patch10: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/autorotate.patch
+
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
@@ -82,9 +74,11 @@ BuildRequires: pkgconfig(libsystemd)
 BuildRequires: xorg-x11-server-Xorg
 BuildRequires: xorg-x11-server-Xvfb
 BuildRequires: pkgconfig(xkeyboard-config)
+# see src/tests/x11-test.sh
+BuildRequires: zenity
 BuildRequires: desktop-file-utils
 # Bootstrap requirements
-BuildRequires: gettext-devel git-core
+BuildRequires: gtk-doc gettext-devel git-core
 BuildRequires: pkgconfig(libcanberra)
 BuildRequires: pkgconfig(gsettings-desktop-schemas) >= %{gsettings_desktop_schemas_version}
 BuildRequires: pkgconfig(gnome-settings-daemon)
@@ -99,17 +93,21 @@ BuildRequires: pkgconfig(wayland-protocols)
 BuildRequires: pkgconfig(wayland-server)
 BuildRequires: pkgconfig(lcms2) >= %{lcms2_version}
 BuildRequires: pkgconfig(colord) >= %{colord_version}
-BuildRequires: pkgconfig(libei-1.0) >= %{libei_version}
-BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
+BuildRequires:  llvm
+BuildRequires:  llvm-devel
+BuildRequires:  clang
+BuildRequires:  clang-libs
+BuildRequires:  lld
+BuildRequires:  clang-devel
 
 BuildRequires: pkgconfig(json-glib-1.0) >= %{json_glib_version}
 BuildRequires: pkgconfig(libinput) >= %{libinput_version}
 BuildRequires: pkgconfig(xwayland)
-BuildRequires: clang
 
 Requires: control-center-filesystem
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
 Requires: gnome-settings-daemon
+Requires: gtk3%{?_isa} >= %{gtk3_version}
 Requires: gtk4%{?_isa} >= %{gtk4_version}
 Requires: json-glib%{?_isa} >= %{json_glib_version}
 Requires: libinput%{?_isa} >= %{libinput_version}
@@ -129,11 +127,7 @@ Provides: firstboot(windowmanager) = mutter
 Provides: bundled(cogl) = 1.22.0
 Provides: bundled(clutter) = 1.26.0
 
-Conflicts: mutter < 45~beta.1-2
-
-# Make sure dnf updates gnome-shell together with this package; otherwise we
-# might end up with broken gnome-shell installations due to mutter ABI changes.
-Conflicts: gnome-shell < 45~rc
+Conflicts: mutter < 44.3-2
 
 %description
 Mutter is a window and compositing manager that displays and manages
@@ -150,7 +144,7 @@ behaviors to meet the needs of the environment.
 %package common
 Summary: Common files used by %{name} and forks of %{name}
 BuildArch: noarch
-Conflicts: mutter < 45~beta.1-2
+Conflicts: mutter < 44.3-2
 
 %description common
 Common files used by Mutter and soft forks of Mutter
@@ -167,9 +161,7 @@ utilities for testing Metacity/Mutter themes.
 
 %package  tests
 Summary:  Tests for the %{name} package
-Requires: %{name}-devel%{?_isa} = %{version}-%{release}
 Requires: %{name}%{?_isa} = %{version}-%{release}
-Requires: gtk3%{?_isa} >= %{gtk3_version}
 
 %description tests
 The %{name}-tests package contains tests that can be used to verify
