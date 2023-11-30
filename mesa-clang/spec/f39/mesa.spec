@@ -64,8 +64,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        23.2.0-rc3
-Release:        2%{?dist}.clang
+Version:        23.3.0
+Release:        3%{?dist}.clang
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
 URL:            https://www.mesa3d.org
 
@@ -158,6 +158,8 @@ BuildRequires:  pkgconfig(vulkan)
 %endif
 
 BuildRequires:  clang
+BuildRequires:  llvm
+BuildRequires:  lld
 
 %description
 %{summary}.
@@ -418,6 +420,9 @@ export RUSTFLAGS="%build_rustflags"
   -Dlmsensors=disabled \
 %endif
   -Dandroid-libbacktrace=disabled \
+%ifarch %{ix86}
+  -Dglx-read-only-text=true
+%endif
   %{nil}
 %meson_build
 
@@ -596,6 +601,7 @@ popd
 %if 0%{?with_kmsro}
 %{_libdir}/dri/armada-drm_dri.so
 %{_libdir}/dri/exynos_dri.so
+%{_libdir}/dri/hdlcd_dri.so
 %{_libdir}/dri/hx8357d_dri.so
 %{_libdir}/dri/ili9225_dri.so
 %{_libdir}/dri/ili9341_dri.so

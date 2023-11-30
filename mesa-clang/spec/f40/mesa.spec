@@ -64,9 +64,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 23.3.0-rc3
-Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        2%{?dist}.clang
+Version:        23.3.0
+Release:        3%{?dist}.clang
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
 URL:            https://www.mesa3d.org
 
@@ -74,9 +73,9 @@ Source0:        https://archive.mesa3d.org/mesa-%{version}.tar.xz
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
-Source1: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f40/Mesa-MLAA-License-Clarification-Email.txt
+Source1: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f39/Mesa-MLAA-License-Clarification-Email.txt
 
-Patch10: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f40/gnome-shell-glthread-disable.patch
+Patch10: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f39/gnome-shell-glthread-disable.patch
 
 BuildRequires:  meson >= 1.2.0
 BuildRequires:  gcc
@@ -159,6 +158,8 @@ BuildRequires:  pkgconfig(vulkan)
 %endif
 
 BuildRequires:  clang
+BuildRequires:  llvm
+BuildRequires:  lld
 
 %description
 %{summary}.
@@ -419,6 +420,9 @@ export RUSTFLAGS="%build_rustflags"
   -Dlmsensors=disabled \
 %endif
   -Dandroid-libbacktrace=disabled \
+%ifarch %{ix86}
+  -Dglx-read-only-text=true
+%endif
   %{nil}
 %meson_build
 
@@ -597,6 +601,7 @@ popd
 %if 0%{?with_kmsro}
 %{_libdir}/dri/armada-drm_dri.so
 %{_libdir}/dri/exynos_dri.so
+%{_libdir}/dri/hdlcd_dri.so
 %{_libdir}/dri/hx8357d_dri.so
 %{_libdir}/dri/ili9225_dri.so
 %{_libdir}/dri/ili9341_dri.so

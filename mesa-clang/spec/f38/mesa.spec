@@ -22,10 +22,10 @@
 %endif
 %global with_iris   1
 %global with_xa     1
-%global platform_vulkan ,intel,intel_hasvk
+%global intel_platform_vulkan ,intel,intel_hasvk
 %endif
 
-%ifarch aarch64
+%ifarch aarch64 x86_64 %{ix86}
 %if !0%{?rhel}
 %global with_etnaviv   1
 %global with_lima      1
@@ -37,7 +37,7 @@
 %global with_panfrost  1
 %global with_tegra     1
 %global with_xa        1
-%global platform_vulkan ,broadcom,freedreno,panfrost
+%global extra_platform_vulkan ,broadcom,freedreno,panfrost
 %endif
 
 %ifnarch s390x
@@ -49,18 +49,23 @@
 %global with_vmware 1
 %endif
 
+%if !0%{?rhel}
+%global with_libunwind 1
+%global with_lmsensors 1
+%endif
+
 %ifarch %{valgrind_arches}
 %bcond_without valgrind
 %else
 %bcond_with valgrind
 %endif
 
-%global vulkan_drivers swrast%{?base_vulkan}%{?platform_vulkan}
+%global vulkan_drivers swrast%{?base_vulkan}%{?intel_platform_vulkan}%{?extra_platform_vulkan}
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        23.1.9
-Release:        2%{?dist}.clang
+Version:        23.3.0
+Release:        3%{?dist}.clang
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
 URL:            https://www.mesa3d.org
 
@@ -68,11 +73,11 @@ Source0:        https://archive.mesa3d.org/mesa-%{version}.tar.xz
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
-Source1: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f38/Mesa-MLAA-License-Clarification-Email.txt
+Source1: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f39/Mesa-MLAA-License-Clarification-Email.txt
 
-Patch10: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f38/gnome-shell-glthread-disable.patch
+Patch10: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f39/gnome-shell-glthread-disable.patch
 
-BuildRequires:  meson >= 1.0.0
+BuildRequires:  meson >= 1.2.0
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
 BuildRequires:  gettext
@@ -83,7 +88,9 @@ BuildRequires:  kernel-headers
 # SRPMs for each arch still have the same build dependencies. See:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1859515
 BuildRequires:  pkgconfig(libdrm) >= 2.4.97
+%if 0%{?with_libunwind}
 BuildRequires:  pkgconfig(libunwind)
+%endif
 BuildRequires:  pkgconfig(expat)
 BuildRequires:  pkgconfig(zlib) >= 1.2.3
 BuildRequires:  pkgconfig(libzstd)
@@ -113,7 +120,9 @@ BuildRequires:  pkgconfig(xcb-randr)
 BuildRequires:  pkgconfig(xrandr) >= 1.3
 BuildRequires:  bison
 BuildRequires:  flex
+%if 0%{?with_lmsensors}
 BuildRequires:  lm_sensors-devel
+%endif
 %if 0%{?with_vdpau}
 BuildRequires:  pkgconfig(vdpau) >= 1.1
 %endif
@@ -149,6 +158,8 @@ BuildRequires:  pkgconfig(vulkan)
 %endif
 
 BuildRequires:  clang
+BuildRequires:  llvm
+BuildRequires:  lld
 
 %description
 %{summary}.
@@ -208,10 +219,6 @@ Requires:       %{name}-libglapi%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{relea
 %if 0%{?with_va}
 Recommends:     %{name}-va-drivers%{?_isa}
 %endif
-# If mesa-libEGL is installed, it must match in version. This is here to prevent using
-# mesa-libEGL < 23.0.3-1 (frozen in the 'fedora' repo) which didn't have strong enough
-# inter-dependencies. See https://bugzilla.redhat.com/show_bug.cgi?id=2193135 .
-Requires:       (%{name}-libEGL%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release} if %{name}-libEGL%{?_isa})
 
 %description dri-drivers
 %{summary}.
@@ -406,7 +413,16 @@ export RUSTFLAGS="%build_rustflags"
   -Dvalgrind=%{?with_valgrind:enabled}%{!?with_valgrind:disabled} \
   -Dbuild-tests=false \
   -Dselinux=true \
+%if !0%{?with_libunwind}
+  -Dlibunwind=disabled \
+%endif
+%if !0%{?with_lmsensors}
+  -Dlmsensors=disabled \
+%endif
   -Dandroid-libbacktrace=disabled \
+%ifarch %{ix86}
+  -Dglx-read-only-text=true
+%endif
   %{nil}
 %meson_build
 
@@ -539,7 +555,7 @@ popd
 %{_libdir}/dri/i915_dri.so
 %{_libdir}/dri/iris_dri.so
 %endif
-%ifarch aarch64
+%ifarch aarch64 x86_64 %{ix86}
 %{_libdir}/dri/ingenic-drm_dri.so
 %{_libdir}/dri/imx-drm_dri.so
 %{_libdir}/dri/imx-lcdif_dri.so
@@ -585,6 +601,7 @@ popd
 %if 0%{?with_kmsro}
 %{_libdir}/dri/armada-drm_dri.so
 %{_libdir}/dri/exynos_dri.so
+%{_libdir}/dri/hdlcd_dri.so
 %{_libdir}/dri/hx8357d_dri.so
 %{_libdir}/dri/ili9225_dri.so
 %{_libdir}/dri/ili9341_dri.so
@@ -647,7 +664,7 @@ popd
 %{_libdir}/libvulkan_intel_hasvk.so
 %{_datadir}/vulkan/icd.d/intel_hasvk_icd.*.json
 %endif
-%ifarch aarch64
+%ifarch aarch64 x86_64 %{ix86}
 %{_libdir}/libvulkan_broadcom.so
 %{_datadir}/vulkan/icd.d/broadcom_icd.*.json
 %{_libdir}/libvulkan_freedreno.so
