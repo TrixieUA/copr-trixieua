@@ -15,8 +15,8 @@
 %global tarball_version %%(echo %{version} | tr '~' '.')
 
 Name:          mutter
-Version:       44.6
-Release:       3%{?dist}.tripplebuffer
+Version:       44.7
+Release:       10%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
