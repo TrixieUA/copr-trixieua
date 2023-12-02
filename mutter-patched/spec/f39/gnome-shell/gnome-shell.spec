@@ -3,8 +3,8 @@
 %define _disable_source_fetch 0
 
 Name:           gnome-shell
-Version:        45.1
-Release:        4%{?dist}.clang
+Version:        45.2
+Release:        10%{?dist}.clang
 Summary:        Window management and application launching for GNOME
 
 License:        GPLv2+
