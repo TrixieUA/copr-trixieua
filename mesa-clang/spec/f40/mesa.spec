@@ -65,7 +65,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        23.3.0
-Release:        3%{?dist}.clang
+Release:        10%{?dist}.clang
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
 URL:            https://www.mesa3d.org
 
