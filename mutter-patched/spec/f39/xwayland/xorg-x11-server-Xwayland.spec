@@ -1,6 +1,7 @@
 %define _disable_source_fetch 0
 %global toolchain clang
 %global pkgname xwayland
+%global toolchain clang
 
 %global default_font_path "catalogue:/etc/X11/fontpath.d,built-ins"
 
@@ -20,6 +21,8 @@ Requires: libepoxy >= 1.5.5
 
 BuildRequires: gcc
 BuildRequires: clang
+BuildRequires: llvm
+BuildRequires: lld
 BuildRequires: git-core
 BuildRequires: meson
 

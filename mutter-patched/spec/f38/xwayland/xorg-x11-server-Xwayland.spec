@@ -1,13 +1,14 @@
 %define _disable_source_fetch 0
 %global toolchain clang
 %global pkgname xwayland
+%global toolchain clang
 
 %global default_font_path "catalogue:/etc/X11/fontpath.d,built-ins"
 
 Summary:   Xwayland
 Name:      xorg-x11-server-Xwayland
 Version:   23.1.2
-Release:   4%{?dist}.clang
+Release:   10%{?dist}.clang
 
 URL:       http://www.x.org
 Source0:   https://www.x.org/pub/individual/xserver/%{pkgname}-%{version}.tar.xz
@@ -20,6 +21,8 @@ Requires: libepoxy >= 1.5.5
 
 BuildRequires: gcc
 BuildRequires: clang
+BuildRequires: llvm
+BuildRequires: lld
 BuildRequires: git-core
 BuildRequires: meson
 
