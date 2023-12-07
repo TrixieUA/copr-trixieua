@@ -13,7 +13,7 @@
 Name:    gdm
 Epoch:   1
 Version: 44.1
-Release: 10%{?dist}
+Release: 10%{?dist}.clang
 Summary: The GNOME Display Manager
 
 License: GPL-2.0-or-later
