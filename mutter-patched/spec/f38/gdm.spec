@@ -1,5 +1,6 @@
 %global _hardened_build 1
 %global toolchain clang
+%define _disable_source_fetch 0
 
 %define libauditver 1.0.6
 %define gtk3_version 2.99.2
