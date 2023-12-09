@@ -17,7 +17,7 @@
 
 Name:          mutter
 Version:       45.2
-Release:       10%{?dist}.tripplebuffer
+Release:       11%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -48,6 +48,8 @@ Patch5: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-pat
 # backends/native: Main thread rt-scheduler: experimental feature no more 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3296
 Patch6: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3296.patch
+
+Patch7: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter_increase_check_alive_timeout.patch
 
 Patch10: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/autorotate.patch
 

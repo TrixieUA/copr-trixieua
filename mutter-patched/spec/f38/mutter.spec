@@ -16,7 +16,7 @@
 
 Name:          mutter
 Version:       44.7
-Release:       10%{?dist}.tripplebuffer
+Release:       11%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -39,6 +39,8 @@ Patch4: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-pat
 # GPU optimizations for partial surface update 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2965
 Patch6:	https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/2965.patch
+
+Patch7: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter_increase_check_alive_timeout.patch
 
 Patch10: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/autorotate.patch
 
