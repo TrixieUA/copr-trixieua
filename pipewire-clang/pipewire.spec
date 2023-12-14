@@ -1,4 +1,5 @@
 %global toolchain clang
+%define _disable_source_fetch 0
 
 %global majorversion 1
 %global minorversion 0
@@ -76,7 +77,7 @@ Source0:        https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/%{git
 %else
 Source0:        https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/%{version}/pipewire-%{version}.tar.gz
 %endif
-Source1:        pipewire.sysusers
+Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/pipewire-clang/pipewire.sysusers
 
 ## upstream patches
 
