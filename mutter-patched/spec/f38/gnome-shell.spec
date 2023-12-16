@@ -4,7 +4,7 @@
 
 Name:           gnome-shell
 Version:        44.7
-Release:        10%{?dist}.clang
+Release:        12%{?dist}.clang
 Summary:        Window management and application launching for GNOME
 
 License:        GPLv2+

@@ -17,7 +17,7 @@
 
 Name:          mutter
 Version:       45.2
-Release:       12%{?dist}.tripplebuffer
+Release:       13%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+

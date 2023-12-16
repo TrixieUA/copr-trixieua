@@ -69,7 +69,7 @@
 Name:           pipewire
 Summary:        Media Sharing Server
 Version:        %{majorversion}.%{minorversion}.%{microversion}
-Release:        10%{?dist}.clang
+Release:        11%{?dist}.clang
 License:        MIT
 URL:            https://pipewire.org/
 %if 0%{?snapdate}
