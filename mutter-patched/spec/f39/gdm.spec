@@ -1,4 +1,4 @@
-%global toolachain clang
+%global toolchain clang
 %define _disable_source_fetch 0
 
 %global _hardened_build 1
