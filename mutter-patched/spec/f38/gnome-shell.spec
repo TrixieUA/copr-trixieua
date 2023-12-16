@@ -163,7 +163,7 @@ easy to use experience.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-%meson -Dextensions_app=false
+%meson -Dextensions_app=false --buildtype=release
 %meson_build
 
 %install

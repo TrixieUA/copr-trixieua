@@ -425,6 +425,7 @@ cp %{SOURCE1} subprojects/packagefiles/
     -D audiotestsrc=disabled -D videotestsrc=disabled				\
     -D volume=disabled -D bluez5-codec-aptx=disabled 		  		\
     -D bluez5-codec-lc3plus=disabled -D bluez5-codec-lc3=enabled		\
+    --buildtype=release
 %ifarch s390x
     -D bluez5-codec-ldac=disabled						\
 %endif

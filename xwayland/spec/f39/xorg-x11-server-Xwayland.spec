@@ -107,7 +107,8 @@ necessary for developing Wayland compositors using Xwayland.
         -Dxkb_output_dir=%{_localstatedir}/lib/xkb \
         -Dxcsecurity=true \
         -Dglamor=true \
-        -Ddri3=true
+        -Ddri3=true \
+        --buildtype=release
 
 %meson_build
 

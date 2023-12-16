@@ -131,7 +131,8 @@ GDM specific authentication features.
        -Ddefault-path=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin \
        -Dprofiling=true \
        -Dplymouth=enabled \
-       -Dselinux=enabled
+       -Dselinux=enabled \
+       --buildtype=release
 %meson_build
 
 
