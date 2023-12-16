@@ -1,0 +1,1875 @@
+From 15aad038d826ae34978186c24589c755010a9904 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Thu, 14 Dec 2023 15:35:14 +0100
+Subject: [PATCH 01/32] shaped-texture: Reset pipelines when texture format
+ changes
+
+Changing the MultiTexture may require a different set of pipelines when
+the texture format is different. We keep track of the attached
+MultiTextureFormat just like we do for the width and height.
+
+This fixes misrendering when a client attaches buffers with different
+MultiTextureFormats to the same surface.
+
+Fixes: 3dd9f15eb ("shaped-texture: Start using MetaMultiTexture")
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3456>
+
+(cherry picked from commit 7458907360c05a57334244a3cc2a534c48056f1b)
+---
+ src/compositor/meta-shaped-texture.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/src/compositor/meta-shaped-texture.c b/src/compositor/meta-shaped-texture.c
+index 24bce716118..cdaa0aff284 100644
+--- a/src/compositor/meta-shaped-texture.c
++++ b/src/compositor/meta-shaped-texture.c
+@@ -101,6 +101,7 @@ struct _MetaShapedTexture
+   int viewport_dst_width;
+   int viewport_dst_height;
+ 
++  MetaMultiTextureFormat tex_format;
+   int tex_width, tex_height;
+   int fallback_width, fallback_height;
+   int dst_width, dst_height;
+@@ -577,6 +578,7 @@ static void
+ set_multi_texture (MetaShapedTexture *stex,
+                    MetaMultiTexture  *multi_tex)
+ {
++  MetaMultiTextureFormat format;
+   int width, height;
+ 
+   g_clear_object (&stex->texture);
+@@ -584,18 +586,22 @@ set_multi_texture (MetaShapedTexture *stex,
+   if (multi_tex != NULL)
+     {
+       stex->texture = g_object_ref (multi_tex);
++      format = meta_multi_texture_get_format (multi_tex);
+       width = meta_multi_texture_get_width (multi_tex);
+       height = meta_multi_texture_get_height (multi_tex);
+     }
+   else
+     {
++      format = META_MULTI_TEXTURE_FORMAT_INVALID;
+       width = 0;
+       height = 0;
+     }
+ 
+   if (stex->tex_width != width ||
+-      stex->tex_height != height)
++      stex->tex_height != height ||
++      stex->tex_format != format)
+     {
++      stex->tex_format = format;
+       stex->tex_width = width;
+       stex->tex_height = height;
+       meta_shaped_texture_reset_pipelines (stex);
+-- 
+GitLab
+
+
+From 04a48d0061f33cf09bd45f71f4836ce0d273eb50 Mon Sep 17 00:00:00 2001
+From: Christopher Fore <csfore@posteo.net>
+Date: Thu, 14 Dec 2023 23:17:11 -0500
+Subject: [PATCH 02/32] backends: Include unistd.h to fix compilation on musl
+
+Musl doesn't seem to include this by default so explicitly including it
+should fix compilation on Musl.
+
+Tested with Clang 16/17 and GCC 14.
+
+Error:
+src/backends/meta-fd-source.c:70:3: error: call to undeclared function 'close'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+  close (fd_source->poll_fd.fd);
+  ^
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/3078
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3455>
+
+(cherry picked from commit ec1778a37f34ae15ddc3dddf4fd452de195672be)
+---
+ src/backends/meta-fd-source.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/backends/meta-fd-source.c b/src/backends/meta-fd-source.c
+index d66c7b74880..73989bf15c7 100644
+--- a/src/backends/meta-fd-source.c
++++ b/src/backends/meta-fd-source.c
+@@ -20,6 +20,8 @@
+ 
+ #include "config.h"
+ 
++#include <unistd.h>
++
+ #include "backends/meta-fd-source.h"
+ 
+ typedef struct _MetaFdtSource
+-- 
+GitLab
+
+
+From 2f023608158faf5c3c370f29913994037134feb0 Mon Sep 17 00:00:00 2001
+From: Sebastian Keller <skeller@gnome.org>
+Date: Fri, 15 Dec 2023 00:47:34 +0100
+Subject: [PATCH 03/32] clutter/actor: Don't write uninitialized out values on
+ failed transform
+
+clutter_actor_get_transformed_position() would write the uninitialized
+values of v2 when clutter_actor_apply_transform_to_point() fails in
+_clutter_actor_fully_transform_vertices() because the actor has not been
+added to the stage yet.
+
+When called from JS this would overwrite the zero initialized values
+passed in from gjs. If the uninitialized values now happen to correspond
+to one of the NaN float values used by mozjs to represent a pointer
+type, this would lead to seemingly random crashes in mozjs code later
+on.
+
+Avoid this by using _clutter_actor_fully_transform_vertices() directly,
+which allows us to check if it failed.
+
+Related: https://gitlab.gnome.org/GNOME/gnome-shell-extensions/-/issues/469
+Related: https://gitlab.gnome.org/GNOME/gjs/-/issues/591
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3453>
+
+(cherry picked from commit c86d8a23c3464f75b976af915f0926b5dfc10241)
+---
+ clutter/clutter/clutter-actor.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/clutter/clutter/clutter-actor.c b/clutter/clutter/clutter-actor.c
+index 8f54c61fe3b..3cd092fbaad 100644
+--- a/clutter/clutter/clutter-actor.c
++++ b/clutter/clutter/clutter-actor.c
+@@ -9527,7 +9527,9 @@ clutter_actor_get_transformed_position (ClutterActor *self,
+   graphene_point3d_t v2;
+ 
+   v1.x = v1.y = v1.z = 0;
+-  clutter_actor_apply_transform_to_point (self, &v1, &v2);
++
++  if (!_clutter_actor_fully_transform_vertices (self, &v1, &v2, 1))
++    return;
+ 
+   if (x)
+     *x = v2.x;
+-- 
+GitLab
+
+
+From a035babcd566461744d967b2640d9a3eaa7f1751 Mon Sep 17 00:00:00 2001
+From: Daniel van Vugt <daniel.van.vugt@canonical.com>
+Date: Thu, 8 Sep 2022 16:45:29 +0800
+Subject: [PATCH 04/32] kms: Avoid queuing multiple (un)assignments to the same
+ plane in an update
+
+Just like we already do in `meta_kms_update_assign_plane`.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2620>
+
+(cherry picked from commit 74ce9592b55e54b307844a33e0ef1159adcc6292)
+---
+ src/backends/native/meta-kms-update.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/backends/native/meta-kms-update.c b/src/backends/native/meta-kms-update.c
+index 5189c5ab324..8d496a44be4 100644
+--- a/src/backends/native/meta-kms-update.c
++++ b/src/backends/native/meta-kms-update.c
+@@ -316,6 +316,8 @@ meta_kms_update_unassign_plane (MetaKmsUpdate *update,
+   g_assert (meta_kms_crtc_get_device (crtc) == update->device);
+   g_assert (meta_kms_plane_get_device (plane) == update->device);
+ 
++  drop_plane_assignment (update, plane, NULL);
++
+   plane_assignment = g_new0 (MetaKmsPlaneAssignment, 1);
+   *plane_assignment = (MetaKmsPlaneAssignment) {
+     .update = update,
+-- 
+GitLab
+
+
+From e2cea07310c23d1a6266dc31f2f9add44a01d7fe Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Mon, 13 Nov 2023 10:42:00 +1000
+Subject: [PATCH 05/32] backends/x11: Fix tab/space indentation issue
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3410>
+
+(cherry picked from commit baafec089a4b33b9036589718ebed60a52e91cbf)
+---
+ src/backends/x11/meta-seat-x11.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/backends/x11/meta-seat-x11.c b/src/backends/x11/meta-seat-x11.c
+index ca9fca789d3..cd68f09418e 100644
+--- a/src/backends/x11/meta-seat-x11.c
++++ b/src/backends/x11/meta-seat-x11.c
+@@ -2190,13 +2190,13 @@ meta_seat_x11_translate_event (MetaSeatX11  *seat,
+         double *axes;
+ 
+         source_device = get_source_device_checked (seat, xev);
+-	if (!source_device)
+-          return NULL;
++        if (!source_device)
++              return NULL;
+ 
+         device = g_hash_table_lookup (seat->devices_by_id,
+                                       GINT_TO_POINTER (xev->deviceid));
+ 
+-	if (clutter_input_device_get_device_type (source_device) == CLUTTER_PAD_DEVICE)
++        if (clutter_input_device_get_device_type (source_device) == CLUTTER_PAD_DEVICE)
+           {
+             uint32_t button, group, mode;
+ 
+-- 
+GitLab
+
+
+From 19bcafb0e491ac3bf17d4616228101130fd9db70 Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Mon, 20 Nov 2023 14:31:37 +1000
+Subject: [PATCH 06/32] backends/native: Set the tool for relative events
+
+Otherwise a tablet in relative mode will never have a tool set and
+nothing happens on motion events - meta_wayland_tablet_seat_update()
+simply exits early for tablet proximity, button or motion events.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3410>
+
+(cherry picked from commit 9e781545aa1fe7fb18d6b1dd1279edb583a65d19)
+---
+ src/backends/native/meta-seat-impl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/backends/native/meta-seat-impl.c b/src/backends/native/meta-seat-impl.c
+index 4ce3a0c4e28..4ba7b607854 100644
+--- a/src/backends/native/meta-seat-impl.c
++++ b/src/backends/native/meta-seat-impl.c
+@@ -627,7 +627,7 @@ meta_seat_impl_notify_relative_motion_in_impl (MetaSeatImpl       *seat_impl,
+     clutter_event_motion_new (CLUTTER_EVENT_FLAG_RELATIVE_MOTION,
+                               time_us,
+                               input_device,
+-                              NULL,
++                              device_native->last_tool,
+                               modifiers,
+                               GRAPHENE_POINT_INIT (x, y),
+                               GRAPHENE_POINT_INIT (dx, dy),
+-- 
+GitLab
+
+
+From 643e8a9e29ede36c4d4c9899e6643c4024e12f01 Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Mon, 20 Nov 2023 14:49:30 +1000
+Subject: [PATCH 07/32] backends/native: Pass the axes down to the relative
+ clutter motion event
+
+Otherwise we get a happy segfault when we're trying broadcast_axis()
+during the tablet event handling.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3410>
+
+(cherry picked from commit 01f78c0451f5a72a7ee998c93666a5fe72f4d3ea)
+---
+ src/backends/native/meta-seat-impl.c                  | 11 +++++++----
+ src/backends/native/meta-seat-impl.h                  |  3 ++-
+ .../native/meta-virtual-input-device-native.c         |  3 ++-
+ 3 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/src/backends/native/meta-seat-impl.c b/src/backends/native/meta-seat-impl.c
+index 4ba7b607854..119afcd160a 100644
+--- a/src/backends/native/meta-seat-impl.c
++++ b/src/backends/native/meta-seat-impl.c
+@@ -577,7 +577,8 @@ meta_seat_impl_notify_relative_motion_in_impl (MetaSeatImpl       *seat_impl,
+                                                float               dx,
+                                                float               dy,
+                                                float               dx_unaccel,
+-                                               float               dy_unaccel)
++                                               float               dy_unaccel,
++                                               double             *axes)
+ {
+   MetaInputDeviceNative *device_native =
+     META_INPUT_DEVICE_NATIVE (input_device);
+@@ -635,7 +636,7 @@ meta_seat_impl_notify_relative_motion_in_impl (MetaSeatImpl       *seat_impl,
+                                                    dy_unaccel),
+                               GRAPHENE_POINT_INIT (dx_constrained,
+                                                    dy_constrained),
+-                              NULL);
++                              axes);
+ 
+   queue_event (seat_impl, event);
+ }
+@@ -1358,7 +1359,8 @@ notify_relative_tool_motion_in_impl (ClutterInputDevice *input_device,
+                                                  time_us,
+                                                  dx, dy,
+                                                  /* FIXME */
+-                                                 dx, dy);
++                                                 dx, dy,
++                                                 axes);
+ }
+ 
+ static void
+@@ -2131,7 +2133,8 @@ process_device_event (MetaSeatImpl          *seat_impl,
+                                                        device,
+                                                        time_us,
+                                                        dx, dy,
+-                                                       dx_unaccel, dy_unaccel);
++                                                       dx_unaccel, dy_unaccel,
++                                                       NULL);
+ 
+         break;
+       }
+diff --git a/src/backends/native/meta-seat-impl.h b/src/backends/native/meta-seat-impl.h
+index 83a0a8e3b7d..fa8b201a6b4 100644
+--- a/src/backends/native/meta-seat-impl.h
++++ b/src/backends/native/meta-seat-impl.h
+@@ -152,7 +152,8 @@ void meta_seat_impl_notify_relative_motion_in_impl (MetaSeatImpl       *seat_imp
+                                                     float               dx,
+                                                     float               dy,
+                                                     float               dx_unaccel,
+-                                                    float               dy_unaccel);
++                                                    float               dy_unaccel,
++                                                    double             *axes);
+ 
+ void meta_seat_impl_notify_absolute_motion_in_impl (MetaSeatImpl       *seat_impl,
+                                                     ClutterInputDevice *input_device,
+diff --git a/src/backends/native/meta-virtual-input-device-native.c b/src/backends/native/meta-virtual-input-device-native.c
+index f02a47d8ac3..358ec8bc836 100644
+--- a/src/backends/native/meta-virtual-input-device-native.c
++++ b/src/backends/native/meta-virtual-input-device-native.c
+@@ -226,7 +226,8 @@ notify_relative_motion_in_impl (GTask *task)
+ 						 virtual_evdev->impl_state->device,
+ 						 event->time_us,
+ 						 event->x, event->y,
+-						 event->x, event->y);
++						 event->x, event->y,
++						 NULL);
+   g_task_return_boolean (task, TRUE);
+   return G_SOURCE_REMOVE;
+ }
+-- 
+GitLab
+
+
+From fcceececa5e0308936622810eabf3df08c7dfac5 Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Wed, 22 Nov 2023 10:53:51 +1000
+Subject: [PATCH 08/32] backends/native: Fix whitespace
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3410>
+
+(cherry picked from commit e7f91fad9d833a3f182ffdfc18a421a8ee29ed03)
+---
+ src/backends/native/meta-seat-impl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/backends/native/meta-seat-impl.c b/src/backends/native/meta-seat-impl.c
+index 119afcd160a..b8c091c2a38 100644
+--- a/src/backends/native/meta-seat-impl.c
++++ b/src/backends/native/meta-seat-impl.c
+@@ -1974,7 +1974,7 @@ notify_discrete_axis (MetaSeatImpl                  *seat_impl,
+   if (libinput_event_pointer_has_axis (axis_event,
+                                        LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL))
+     {
+-      dx_value120 = libinput_event_pointer_get_scroll_value_v120 ( 
++      dx_value120 = libinput_event_pointer_get_scroll_value_v120 (
+           axis_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL);
+     }
+   if (libinput_event_pointer_has_axis (axis_event,
+-- 
+GitLab
+
+
+From 10a6c46658ac75be7db15f82d97dce90bc1d3879 Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Wed, 22 Nov 2023 10:55:10 +1000
+Subject: [PATCH 09/32] backends/native: Shuffle static constrain functions up
+
+No functional changes, this just moves two functions up to make the
+follow-up patch more obvious.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3410>
+
+(cherry picked from commit d575138cce31334812aa359de21b5746a1bcefb7)
+---
+ src/backends/native/meta-seat-impl.c | 132 +++++++++++++--------------
+ 1 file changed, 66 insertions(+), 66 deletions(-)
+
+diff --git a/src/backends/native/meta-seat-impl.c b/src/backends/native/meta-seat-impl.c
+index b8c091c2a38..80e95928dc2 100644
+--- a/src/backends/native/meta-seat-impl.c
++++ b/src/backends/native/meta-seat-impl.c
+@@ -508,6 +508,72 @@ meta_seat_impl_notify_key_in_impl (MetaSeatImpl       *seat_impl,
+     }
+ }
+ 
++static void
++constrain_to_barriers (MetaSeatImpl       *seat_impl,
++                       ClutterInputDevice *device,
++                       uint32_t            time,
++                       float              *new_x,
++                       float              *new_y)
++{
++  meta_barrier_manager_native_process_in_impl (seat_impl->barrier_manager,
++                                               device,
++                                               time,
++                                               new_x, new_y);
++}
++
++/*
++ * The pointer constrain code is mostly a rip-off of the XRandR code from Xorg.
++ * (from xserver/randr/rrcrtc.c, RRConstrainCursorHarder)
++ *
++ * Copyright © 2006 Keith Packard
++ * Copyright 2010 Red Hat, Inc
++ *
++ */
++
++static void
++constrain_all_screen_monitors (ClutterInputDevice *device,
++                               MetaViewportInfo   *viewports,
++                               float              *x,
++                               float              *y)
++{
++  float cx, cy;
++  int i, n_views;
++
++  meta_input_device_native_get_coords_in_impl (META_INPUT_DEVICE_NATIVE (device),
++                                               &cx, &cy);
++
++  /* if we're trying to escape, clamp to the CRTC we're coming from */
++
++  n_views = meta_viewport_info_get_num_views (viewports);
++
++  for (i = 0; i < n_views; i++)
++    {
++      int left, right, top, bottom;
++      MtkRectangle rect;
++
++      meta_viewport_info_get_view_info (viewports, i, &rect, NULL);
++
++      left = rect.x;
++      right = left + rect.width;
++      top = rect.y;
++      bottom = top + rect.height;
++
++      if ((cx >= left) && (cx < right) && (cy >= top) && (cy < bottom))
++        {
++          if (*x < left)
++            *x = left;
++          if (*x >= right)
++            *x = right - 1;
++          if (*y < top)
++            *y = top;
++          if (*y >= bottom)
++            *y = bottom - 1;
++
++          return;
++        }
++    }
++}
++
+ static void
+ constrain_coordinates (MetaSeatImpl       *seat_impl,
+                        ClutterInputDevice *input_device,
+@@ -1096,72 +1162,6 @@ meta_seat_impl_notify_touch_event_in_impl (MetaSeatImpl       *seat_impl,
+   queue_event (seat_impl, event);
+ }
+ 
+-static void
+-constrain_to_barriers (MetaSeatImpl       *seat_impl,
+-                       ClutterInputDevice *device,
+-                       uint32_t            time,
+-                       float              *new_x,
+-                       float              *new_y)
+-{
+-  meta_barrier_manager_native_process_in_impl (seat_impl->barrier_manager,
+-                                               device,
+-                                               time,
+-                                               new_x, new_y);
+-}
+-
+-/*
+- * The pointer constrain code is mostly a rip-off of the XRandR code from Xorg.
+- * (from xserver/randr/rrcrtc.c, RRConstrainCursorHarder)
+- *
+- * Copyright © 2006 Keith Packard
+- * Copyright 2010 Red Hat, Inc
+- *
+- */
+-
+-static void
+-constrain_all_screen_monitors (ClutterInputDevice *device,
+-                               MetaViewportInfo   *viewports,
+-                               float              *x,
+-                               float              *y)
+-{
+-  float cx, cy;
+-  int i, n_views;
+-
+-  meta_input_device_native_get_coords_in_impl (META_INPUT_DEVICE_NATIVE (device),
+-                                               &cx, &cy);
+-
+-  /* if we're trying to escape, clamp to the CRTC we're coming from */
+-
+-  n_views = meta_viewport_info_get_num_views (viewports);
+-
+-  for (i = 0; i < n_views; i++)
+-    {
+-      int left, right, top, bottom;
+-      MtkRectangle rect;
+-
+-      meta_viewport_info_get_view_info (viewports, i, &rect, NULL);
+-
+-      left = rect.x;
+-      right = left + rect.width;
+-      top = rect.y;
+-      bottom = top + rect.height;
+-
+-      if ((cx >= left) && (cx < right) && (cy >= top) && (cy < bottom))
+-        {
+-          if (*x < left)
+-            *x = left;
+-          if (*x >= right)
+-            *x = right - 1;
+-          if (*y < top)
+-            *y = top;
+-          if (*y >= bottom)
+-            *y = bottom - 1;
+-
+-          return;
+-        }
+-    }
+-}
+-
+ void
+ meta_seat_impl_constrain_pointer (MetaSeatImpl       *seat_impl,
+                                   ClutterInputDevice *core_pointer,
+-- 
+GitLab
+
+
+From 51bc500b4824f5d1ec27795ab7fa30c61059f8ba Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Mon, 20 Nov 2023 14:28:16 +1000
+Subject: [PATCH 10/32] backends/native: If the tablet tool is relative,
+ constrain it normally
+
+If we're moving our tool like a relative pointer, constrain to our
+viewports, if any. This fixes the cursor moving off the screen in
+relative mode.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/3168
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3410>
+
+(cherry picked from commit f76952e83fcb1afaab2751a38e6a6ac3cc631ce2)
+---
+ src/backends/native/meta-seat-impl.c | 63 +++++++++++++++++++---------
+ 1 file changed, 44 insertions(+), 19 deletions(-)
+
+diff --git a/src/backends/native/meta-seat-impl.c b/src/backends/native/meta-seat-impl.c
+index 80e95928dc2..5f7a2f453ac 100644
+--- a/src/backends/native/meta-seat-impl.c
++++ b/src/backends/native/meta-seat-impl.c
+@@ -574,6 +574,26 @@ constrain_all_screen_monitors (ClutterInputDevice *device,
+     }
+ }
+ 
++static void
++constrain_to_viewports (MetaSeatImpl       *seat_impl,
++                        ClutterInputDevice *device,
++                        uint64_t            time_us,
++                        float              *x_inout,
++                        float              *y_inout)
++{
++  if (seat_impl->viewports)
++    {
++      /* if we're moving inside a monitor, we're fine */
++      if (meta_viewport_info_get_view_at (seat_impl->viewports,
++                                          *x_inout, *y_inout) >= 0)
++        return;
++
++      /* if we're trying to escape, clamp to the CRTC we're coming from */
++      constrain_all_screen_monitors (device, seat_impl->viewports,
++                                     x_inout, y_inout);
++    }
++}
++
+ static void
+ constrain_coordinates (MetaSeatImpl       *seat_impl,
+                        ClutterInputDevice *input_device,
+@@ -583,16 +603,31 @@ constrain_coordinates (MetaSeatImpl       *seat_impl,
+                        float              *x_out,
+                        float              *y_out)
+ {
++  MetaInputDeviceNative *device_evdev = META_INPUT_DEVICE_NATIVE (input_device);
++
+   if (clutter_input_device_get_device_type (input_device) == CLUTTER_TABLET_DEVICE)
+     {
+-      /* Viewport may be unset during startup */
+-      if (seat_impl->viewports)
+-        {
+-          meta_input_device_native_translate_coordinates_in_impl (input_device,
+-                                                                  seat_impl->viewports,
+-                                                                  &x,
+-                                                                  &y);
+-        }
++        if (device_evdev->mapping_mode == META_INPUT_DEVICE_MAPPING_RELATIVE)
++          {
++            constrain_to_barriers (seat_impl, input_device,
++                                   us2ms (time_us),
++                                   &x, &y);
++            constrain_to_viewports (seat_impl,
++                                    input_device,
++                                    time_us,
++                                    &x, &y);
++          }
++        else
++          {
++            /* Viewport may be unset during startup */
++            if (seat_impl->viewports)
++              {
++                meta_input_device_native_translate_coordinates_in_impl (input_device,
++                                                                        seat_impl->viewports,
++                                                                        &x,
++                                                                        &y);
++              }
++          }
+     }
+   else
+     {
+@@ -1186,17 +1221,7 @@ meta_seat_impl_constrain_pointer (MetaSeatImpl       *seat_impl,
+                                               new_x, new_y);
+     }
+ 
+-  if (seat_impl->viewports)
+-    {
+-      /* if we're moving inside a monitor, we're fine */
+-      if (meta_viewport_info_get_view_at (seat_impl->viewports,
+-                                          *new_x, *new_y) >= 0)
+-        return;
+-
+-      /* if we're trying to escape, clamp to the CRTC we're coming from */
+-      constrain_all_screen_monitors (core_pointer, seat_impl->viewports,
+-                                     new_x, new_y);
+-    }
++  constrain_to_viewports (seat_impl, core_pointer, time_us, new_x, new_y);
+ }
+ 
+ static void
+-- 
+GitLab
+
+
+From 562508d42b89bb6e3c6d973a53aef28bde7c7d8d Mon Sep 17 00:00:00 2001
+From: Olivier Fourdan <ofourdan@redhat.com>
+Date: Thu, 7 Dec 2023 16:12:15 +0100
+Subject: [PATCH 11/32] remote-desktop/eis: Fix ConnectToEIS device-types
+
+The change to the device types in xdg-desktop-portal-gnome needs to be
+reflected in mutter as well, otherwise the device types are not properly
+passed along.
+
+As a result, input emulation fails.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/3194
+See-also: https://gitlab.gnome.org/GNOME/xdg-desktop-portal-gnome/-/merge_requests/108/diffs?commit_id=2b3163a
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3447>
+
+(cherry picked from commit a191af1f3d50f23e68f3af9e1f1742d46510609b)
+---
+ src/backends/meta-remote-desktop-session.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/backends/meta-remote-desktop-session.c b/src/backends/meta-remote-desktop-session.c
+index 9605c3c9b58..ec7298ba2e4 100644
+--- a/src/backends/meta-remote-desktop-session.c
++++ b/src/backends/meta-remote-desktop-session.c
+@@ -1914,14 +1914,14 @@ handle_connect_to_eis (MetaDBusRemoteDesktopSession *skeleton,
+ 
+   if (!session->eis)
+     {
+-      uint32_t device_types_bitmask;
+-      MetaRemoteDesktopDeviceTypes device_types;
++      MetaRemoteDesktopDeviceTypes device_types = META_REMOTE_DESKTOP_DEVICE_TYPE_NONE;
+       MetaEisDeviceTypes eis_device_types;
++      GVariant *v;
+ 
+-      if (g_variant_lookup (arg_options, "device-types", "u",
+-                            &device_types_bitmask))
++      v = g_variant_lookup_value (arg_options, "device-types", G_VARIANT_TYPE_UINT32);
++      if (v)
+         {
+-          device_types = device_types_bitmask;
++          device_types = g_variant_get_uint32 (v);
+         }
+       else
+         {
+-- 
+GitLab
+
+
+From a06be4529f9090dfa380882006f6b12f4667a369 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Wed, 6 Dec 2023 15:34:47 +0100
+Subject: [PATCH 12/32] wayland/idle-inhibit: Handle NULL inhibitor->actor
+
+Fixes: a3c62bf8aa7a ("wayland/idle-inhibit: Add state tracking to fix races")
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3444>
+
+(cherry picked from 212283c13b5db8d2fccc0e970c8cc198a1c89c5c)
+---
+ src/wayland/meta-wayland-idle-inhibit.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/src/wayland/meta-wayland-idle-inhibit.c b/src/wayland/meta-wayland-idle-inhibit.c
+index bf9c1fa194c..b2931c8f92d 100644
+--- a/src/wayland/meta-wayland-idle-inhibit.c
++++ b/src/wayland/meta-wayland-idle-inhibit.c
+@@ -291,12 +291,16 @@ static void
+ attach_actor (MetaWaylandIdleInhibitor *inhibitor)
+ {
+   inhibitor->actor = meta_wayland_surface_get_actor (inhibitor->surface);
+-  inhibitor->is_obscured_changed_handler =
+-    g_signal_connect (inhibitor->actor, "notify::is-obscured",
+-                      G_CALLBACK (is_obscured_changed), inhibitor);
+-  inhibitor->actor_destroyed_handler_id =
+-    g_signal_connect (inhibitor->actor, "destroy",
+-                      G_CALLBACK (on_actor_destroyed), inhibitor);
++
++  if (inhibitor->actor)
++    {
++      inhibitor->is_obscured_changed_handler =
++        g_signal_connect (inhibitor->actor, "notify::is-obscured",
++                          G_CALLBACK (is_obscured_changed), inhibitor);
++      inhibitor->actor_destroyed_handler_id =
++        g_signal_connect (inhibitor->actor, "destroy",
++                          G_CALLBACK (on_actor_destroyed), inhibitor);
++    }
+ }
+ 
+ static void
+-- 
+GitLab
+
+
+From ba197def1a28c04ab36805ca5467439554404431 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Wed, 6 Dec 2023 15:41:43 +0100
+Subject: [PATCH 13/32] wayland/idle-inhibit: Pass actor instance in
+ on_actor_changed
+
+This matches the other g_signal_connect / g_clear_signal_handler calls
+for these signal handlers.
+
+Fixes: a3c62bf8aa7a ("wayland/idle-inhibit: Add state tracking to fix races")
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3444>
+
+(cherry picked from commit 200fc76f14824f487ca1e739973c381ef38828b5)
+---
+ src/wayland/meta-wayland-idle-inhibit.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/wayland/meta-wayland-idle-inhibit.c b/src/wayland/meta-wayland-idle-inhibit.c
+index b2931c8f92d..49f09b8c272 100644
+--- a/src/wayland/meta-wayland-idle-inhibit.c
++++ b/src/wayland/meta-wayland-idle-inhibit.c
+@@ -308,9 +308,9 @@ on_actor_changed (MetaWaylandSurface       *surface,
+                   MetaWaylandIdleInhibitor *inhibitor)
+ {
+   g_clear_signal_handler (&inhibitor->is_obscured_changed_handler,
+-                          inhibitor->surface);
++                          inhibitor->actor);
+   g_clear_signal_handler (&inhibitor->actor_destroyed_handler_id,
+-                          inhibitor->surface);
++                          inhibitor->actor);
+   attach_actor (inhibitor);
+ }
+ 
+-- 
+GitLab
+
+
+From 1dec3afeb57715060b59f0cd50e2bd94c80640a2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Wed, 6 Dec 2023 16:09:30 +0100
+Subject: [PATCH 14/32] tree-wide: Fix spelling of "inhibition"
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3444>
+
+(cherry picked from commit 50980f995b1835bdb56186c0dd722dd08b562064)
+---
+ src/backends/meta-remote-access-controller.c |  2 +-
+ src/wayland/meta-wayland-idle-inhibit.c      | 16 ++++++++--------
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/src/backends/meta-remote-access-controller.c b/src/backends/meta-remote-access-controller.c
+index a3b0c9fb0f7..e84e82edce2 100644
+--- a/src/backends/meta-remote-access-controller.c
++++ b/src/backends/meta-remote-access-controller.c
+@@ -167,7 +167,7 @@ meta_remote_access_controller_inhibit_remote_access (MetaRemoteAccessController
+  * @controller: a #MetaRemoteAccessController
+  *
+  * Uninhibits remote access sessions from being created and running. If this was
+- * the last inhibitation that was inhibited, new remote access sessions can now
++ * the last inhibition that was inhibited, new remote access sessions can now
+  * be created.
+  */
+ void
+diff --git a/src/wayland/meta-wayland-idle-inhibit.c b/src/wayland/meta-wayland-idle-inhibit.c
+index 49f09b8c272..03df1fd1634 100644
+--- a/src/wayland/meta-wayland-idle-inhibit.c
++++ b/src/wayland/meta-wayland-idle-inhibit.c
+@@ -58,7 +58,7 @@ struct _MetaWaylandIdleInhibitor
+ 
+ typedef struct _MetaWaylandIdleInhibitor MetaWaylandIdleInhibitor;
+ 
+-static void update_inhibitation (MetaWaylandIdleInhibitor *inhibitor);
++static void update_inhibition (MetaWaylandIdleInhibitor *inhibitor);
+ 
+ static void
+ meta_wayland_inhibitor_free (MetaWaylandIdleInhibitor *inhibitor)
+@@ -97,7 +97,7 @@ inhibit_completed (GObject      *source,
+   g_variant_get (ret, "(u)", &inhibitor->cookie);
+   inhibitor->state = IDLE_STATE_INHIBITED;
+ 
+-  update_inhibitation (inhibitor);
++  update_inhibition (inhibitor);
+ }
+ 
+ static void
+@@ -123,11 +123,11 @@ uninhibit_completed (GObject      *source,
+   g_warn_if_fail (inhibitor->state == IDLE_STATE_UNINHIBITING);
+   inhibitor->state = IDLE_STATE_UNINHIBITED;
+ 
+-  update_inhibitation (inhibitor);
++  update_inhibition (inhibitor);
+ }
+ 
+ static void
+-update_inhibitation (MetaWaylandIdleInhibitor *inhibitor)
++update_inhibition (MetaWaylandIdleInhibitor *inhibitor)
+ {
+   gboolean should_inhibit;
+ 
+@@ -168,7 +168,7 @@ update_inhibitation (MetaWaylandIdleInhibitor *inhibitor)
+       break;
+     case IDLE_STATE_INHIBITING:
+     case IDLE_STATE_UNINHIBITING:
+-      /* Update inhibitation after current asynchronous call completes. */
++      /* Update inhibition after current asynchronous call completes. */
+       return;
+     }
+ 
+@@ -203,7 +203,7 @@ is_obscured_changed (MetaSurfaceActor         *actor,
+                      GParamSpec               *pspec,
+                      MetaWaylandIdleInhibitor *inhibitor)
+ {
+-  update_inhibitation (inhibitor);
++  update_inhibition (inhibitor);
+ }
+ 
+ static void
+@@ -229,7 +229,7 @@ inhibitor_proxy_completed (GObject      *source,
+   inhibitor->session_proxy = proxy;
+   inhibitor->state = IDLE_STATE_UNINHIBITED;
+ 
+-  update_inhibitation (inhibitor);
++  update_inhibition (inhibitor);
+ }
+ 
+ static void
+@@ -257,7 +257,7 @@ idle_inhibitor_destructor (struct wl_resource *resource)
+       break;
+     }
+ 
+-  update_inhibitation (inhibitor);
++  update_inhibition (inhibitor);
+ }
+ 
+ static void
+-- 
+GitLab
+
+
+From 3188d7e717d4a7215a0fff6a69d43145cccabd3d Mon Sep 17 00:00:00 2001
+From: Qiu Wenbo <qiuwenbo@kylinos.com.cn>
+Date: Wed, 29 Nov 2023 18:23:33 +0800
+Subject: [PATCH 15/32] cogl: Fix memory allocation of CoglGLContext
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3440>
+
+(cherry picked from 48515d917ca3609737ec0731a26d257508f1a06a)
+---
+ cogl/cogl/driver/gl/cogl-util-gl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cogl/cogl/driver/gl/cogl-util-gl.c b/cogl/cogl/driver/gl/cogl-util-gl.c
+index c22444265d6..934ad5555ec 100644
+--- a/cogl/cogl/driver/gl/cogl-util-gl.c
++++ b/cogl/cogl/driver/gl/cogl-util-gl.c
+@@ -108,7 +108,7 @@ _cogl_driver_gl_context_init (CoglContext *context)
+   CoglGLContext *gl_context;
+ 
+   if (!context->driver_context)
+-    context->driver_context = g_new0 (CoglContext, 1);
++    context->driver_context = g_new0 (CoglGLContext, 1);
+ 
+   gl_context = _cogl_driver_gl_context (context);
+   if (!gl_context)
+-- 
+GitLab
+
+
+From ff0cdcb46392a9100fe06351e38dbb0d672c5066 Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Sat, 2 Dec 2023 21:23:45 +0100
+Subject: [PATCH 16/32] ci: Add fallback to $CI_COMMIT_TAG for tag pipelines
+
+The script to check out the mutter repository is missing the
+case of tag pipelines, and resorts to CI_DEFAULT_BRANCH. Add
+a fallback through $CI_COMMIT_TAG, so these pipelines fetch
+the expected commit.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/3188
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3438>
+
+(cherry picked from commit 625a7950c4a3089eef554b61a45dbf7a8a22b575)
+---
+ .gitlab-ci.yml | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/.gitlab-ci.yml b/.gitlab-ci.yml
+index f6bd6372253..506ae3ac511 100644
+--- a/.gitlab-ci.yml
++++ b/.gitlab-ci.yml
+@@ -32,6 +32,8 @@ variables:
+       if [ -n "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" ]; then
+         uri="$CI_MERGE_REQUEST_SOURCE_PROJECT_URL.git"
+         branch="$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
++      elif [ -n "$CI_COMMIT_TAG" ]; then
++        branch="$CI_COMMIT_TAG"
+       elif [ -n "$CI_COMMIT_BRANCH" ]; then
+         branch="$CI_COMMIT_BRANCH"
+       else
+-- 
+GitLab
+
+
+From a98f1c960808eac5089a7d4032c384574ee5d1f6 Mon Sep 17 00:00:00 2001
+From: Ivan Molodetskikh <yalterz@gmail.com>
+Date: Tue, 28 Nov 2023 08:35:50 +0400
+Subject: [PATCH 17/32] clutter/pick-stack: Add an allocation check to
+ calculate_clear_area ()
+
+We might pick an actor that needs relayout. I've seen this happen inside
+hiding / unmapping in particular. In this case, calculate_clear_area ()
+will call clutter_actor_get_abs_allocation_vertices () which in turn
+will force a relayout. However, this is not what we want, because:
+
+1. We don't want to run layout during picking.
+2. If the actor needs an allocation, then the pick stack could not have
+   used an up-to-date allocation, because it is not computed. Therefore
+   this clear area would use a potentially completely different
+   allocation than the one stored in the pick stack.
+
+Thankfully, clear area seems to be used as a cache/optimization, so
+let's just avoid computing it if the actor is not allocated.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3425>
+
+(cherry picked from commit edbc9a20863fd226e377787f4e75c32d2e359399)
+---
+ clutter/clutter/clutter-pick-stack.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/clutter/clutter/clutter-pick-stack.c b/clutter/clutter/clutter-pick-stack.c
+index 8cecb8adbf0..cf3178fc118 100644
+--- a/clutter/clutter/clutter-pick-stack.c
++++ b/clutter/clutter/clutter-pick-stack.c
+@@ -462,6 +462,13 @@ calculate_clear_area (ClutterPickStack  *pick_stack,
+   MtkRectangle rect;
+   int i;
+ 
++  if (!clutter_actor_has_allocation (pick_rec->actor))
++    {
++      if (clear_area)
++        *clear_area = NULL;
++      return;
++    }
++
+   clutter_actor_get_abs_allocation_vertices (pick_rec->actor,
+                                              (graphene_point3d_t *) &verts);
+   if (!get_verts_rectangle (verts, &rect))
+-- 
+GitLab
+
+
+From 951f77738ccf82351fcee49ffe9b74b8f523f4ef Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Fri, 24 Nov 2023 12:37:03 +0100
+Subject: [PATCH 18/32] core: Disconnect notify::is-grabbed signal when closing
+ display
+
+Given destruction order, the display goes away before the stage, so
+this lingering signal connection may trigger unintended crashes.
+
+Fixes: 05eeb684d1 ("window: Postpone focusing until grab ended if uninteractable")
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3422>
+
+(cherry picked from commit 8de30c3b6e617fa342251251062dcd28fd12ade4)
+---
+ src/core/display.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/core/display.c b/src/core/display.c
+index 0a191c0fbca..dd7191af579 100644
+--- a/src/core/display.c
++++ b/src/core/display.c
+@@ -1223,6 +1223,8 @@ void
+ meta_display_close (MetaDisplay *display,
+                     guint32      timestamp)
+ {
++  MetaBackend *backend = backend_from_display (display);
++  ClutterActor *stage = meta_backend_get_stage (backend);
+   MetaCompositor *compositor;
+   MetaLaters *laters;
+ 
+@@ -1272,6 +1274,8 @@ meta_display_close (MetaDisplay *display,
+ 
+   meta_display_shutdown_keys (display);
+ 
++  g_signal_handlers_disconnect_by_func (stage, on_is_grabbed_changed, display);
++
+   g_clear_object (&display->bell);
+   g_clear_object (&display->startup_notification);
+   g_clear_object (&display->workspace_manager);
+-- 
+GitLab
+
+
+From 27fa81a711e065ca476f70c2ff5c8caa2812e1dc Mon Sep 17 00:00:00 2001
+From: Daniel van Vugt <daniel.van.vugt@canonical.com>
+Date: Tue, 30 May 2023 17:18:19 +0800
+Subject: [PATCH 19/32] native/render-device-egl-stream: Remove unused variable
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2905>
+
+(cherry picked from commit 6cb68d39f5556144396c42f61a9c750995f61b4c)
+---
+ src/backends/native/meta-render-device-egl-stream.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/src/backends/native/meta-render-device-egl-stream.c b/src/backends/native/meta-render-device-egl-stream.c
+index 80a2edc8e18..607800ff1e4 100644
+--- a/src/backends/native/meta-render-device-egl-stream.c
++++ b/src/backends/native/meta-render-device-egl-stream.c
+@@ -174,7 +174,6 @@ meta_render_device_egl_stream_initable_init (GInitable     *initable,
+   MetaKms *kms;
+   EGLDeviceEXT egl_device;
+   EGLDisplay egl_display;
+-  g_autofree const char **missing_extensions = NULL;
+ 
+   if (count_mode_setting_devices (backend) != 1)
+     {
+-- 
+GitLab
+
+
+From 9155df0091fae94d4f48058c67796d2b3c006102 Mon Sep 17 00:00:00 2001
+From: Daniel van Vugt <daniel.van.vugt@canonical.com>
+Date: Thu, 22 Jun 2023 17:55:07 +0800
+Subject: [PATCH 20/32] backends/native: Count MetaRenderDeviceEglStream
+ instances externally
+
+`count_mode_setting_devices` was incorrect in both name and in function.
+What it was actually doing was counting GPUs that had been registered with
+the backend so far (during the `init_gpus` loop). What it was intended to
+do was to count the number of `MetaRenderDeviceEglStream` instances, which
+is the thing we're limited to only one of. So `count_mode_setting_devices`
+would return zero whenever the first GPU initialized happened to be a
+`MetaRenderDeviceEglStream`, which would in turn prevent
+`MetaRenderDeviceEglStream` from successfully initializing. Seems it only
+ever worked in the case of a hybrid system where the first GPU initialized
+was GBM-based.
+
+Now we count `MetaRenderDeviceEglStream` instances (zero or one) externally.
+This allows initialization to succeed when it happens to be the first (or
+only) GPU. And so `MUTTER_DEBUG_FORCE_EGL_STREAM=1` now works.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2905>
+
+(cherry picked from 8103ebc21abe42745b1ed0742270f35f49ba5d47)
+---
+ src/backends/native/meta-backend-native.c     | 32 +++++++++++++++----
+ .../native/meta-render-device-egl-stream.c    | 14 --------
+ 2 files changed, 25 insertions(+), 21 deletions(-)
+
+diff --git a/src/backends/native/meta-backend-native.c b/src/backends/native/meta-backend-native.c
+index f01890460c8..997e4ba07a9 100644
+--- a/src/backends/native/meta-backend-native.c
++++ b/src/backends/native/meta-backend-native.c
+@@ -95,6 +95,10 @@ struct _MetaBackendNative
+   GHashTable *startup_render_devices;
+ 
+   MetaBackendNativeMode mode;
++
++#ifdef HAVE_EGL_DEVICE
++  MetaRenderDeviceEglStream *render_device_egl_stream;
++#endif
+ };
+ 
+ static GInitableIface *initable_parent_iface;
+@@ -472,7 +476,6 @@ create_render_device (MetaBackendNative  *backend_native,
+   g_autoptr (MetaRenderDeviceGbm) render_device_gbm = NULL;
+   g_autoptr (GError) gbm_error = NULL;
+ #ifdef HAVE_EGL_DEVICE
+-  g_autoptr (MetaRenderDeviceEglStream) render_device_egl_stream = NULL;
+   g_autoptr (GError) egl_stream_error = NULL;
+ #endif
+ 
+@@ -544,12 +547,27 @@ create_render_device (MetaBackendNative  *backend_native,
+ #endif
+ 
+ #ifdef HAVE_EGL_DEVICE
+-  render_device_egl_stream =
+-    meta_render_device_egl_stream_new (backend,
+-                                       device_file,
+-                                       &egl_stream_error);
+-  if (render_device_egl_stream)
+-    return META_RENDER_DEVICE (g_steal_pointer (&render_device_egl_stream));
++  if (!backend_native->render_device_egl_stream)
++    {
++      MetaRenderDeviceEglStream *device;
++
++      device = meta_render_device_egl_stream_new (backend,
++                                                  device_file,
++                                                  &egl_stream_error);
++      if (device)
++        {
++          g_object_add_weak_pointer (G_OBJECT (device),
++                                     (gpointer *) &backend_native->render_device_egl_stream);
++          return META_RENDER_DEVICE (device);
++        }
++    }
++  else if (!render_device_gbm)
++    {
++      g_set_error (&egl_stream_error,
++                   G_IO_ERROR,
++                   G_IO_ERROR_FAILED,
++                   "it's not GBM-compatible and one EGLDevice was already found");
++    }
+ #endif
+ 
+   if (render_device_gbm)
+diff --git a/src/backends/native/meta-render-device-egl-stream.c b/src/backends/native/meta-render-device-egl-stream.c
+index 607800ff1e4..d3eb29d56a2 100644
+--- a/src/backends/native/meta-render-device-egl-stream.c
++++ b/src/backends/native/meta-render-device-egl-stream.c
+@@ -64,12 +64,6 @@ get_egl_device_display (MetaRenderDevice  *render_device,
+                                         error);
+ }
+ 
+-static int
+-count_mode_setting_devices (MetaBackend *backend)
+-{
+-  return g_list_length (meta_backend_get_gpus (backend));
+-}
+-
+ static const char *
+ get_drm_device_file (MetaEgl     *egl,
+                      EGLDeviceEXT device,
+@@ -175,14 +169,6 @@ meta_render_device_egl_stream_initable_init (GInitable     *initable,
+   EGLDeviceEXT egl_device;
+   EGLDisplay egl_display;
+ 
+-  if (count_mode_setting_devices (backend) != 1)
+-    {
+-      g_set_error (error, G_IO_ERROR,
+-                   G_IO_ERROR_FAILED,
+-                   "EGLDevice currently only works with single GPU systems");
+-      return FALSE;
+-    }
+-
+   egl_device = find_egl_device (render_device, error);
+   if (egl_device == EGL_NO_DEVICE_EXT)
+     return FALSE;
+-- 
+GitLab
+
+
+From 79ba0a58be1a777e3621cdd1f9c04e55cbf3f0ab Mon Sep 17 00:00:00 2001
+From: Daniel van Vugt <daniel.van.vugt@canonical.com>
+Date: Tue, 21 Nov 2023 17:26:15 +0800
+Subject: [PATCH 21/32] clutter/actor: Handle
+ _clutter_actor_get_debug_name(NULL)
+
+NULL actor pointers seem to arise sometimes in `clutter_stage_update_device`
+when using a touchscreen, but that's only fatal with `CLUTTER_DEBUG=event`.
+So just handle NULL where it was crashing: `_clutter_actor_get_debug_name`.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3413>
+
+(cherry picked from commit f74fe6bd676eeb3d79e7c92044f3e3f270dfe16f)
+---
+ clutter/clutter/clutter-actor.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/clutter/clutter/clutter-actor.c b/clutter/clutter/clutter-actor.c
+index 3cd092fbaad..983acf3faaa 100644
+--- a/clutter/clutter/clutter-actor.c
++++ b/clutter/clutter/clutter-actor.c
+@@ -1048,9 +1048,14 @@ G_DEFINE_TYPE_WITH_CODE (ClutterActor,
+ const char *
+ _clutter_actor_get_debug_name (ClutterActor *actor)
+ {
+-  ClutterActorPrivate *priv = actor->priv;
++  ClutterActorPrivate *priv;
+   const char *retval;
+ 
++  if (!actor)
++    return "<unnamed>[<ClutterActor>NULL]";
++
++  priv = actor->priv;
++
+   if (G_UNLIKELY (priv->debug_name == NULL))
+     {
+       priv->debug_name = g_strdup_printf ("<%s>[<%s>:%p]",
+-- 
+GitLab
+
+
+From 43f633a247ae950dddc4882a1866875100a18c9f Mon Sep 17 00:00:00 2001
+From: Sebastian Keller <skeller@gnome.org>
+Date: Mon, 20 Nov 2023 11:46:13 +0100
+Subject: [PATCH 22/32] clutter/input-only-action: Don't override finalize with
+ dispose
+
+This was resulting in the GObject never being properly finalized,
+leading to a leak.
+
+Fixes: e917b7de4 ("clutter/stage: Add input-only grabs")
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3411>
+
+(cherry picked from commit aed55e0808796b3eb383aa484bc36c89126c14fc)
+---
+ clutter/clutter/clutter-input-only-action.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/clutter/clutter/clutter-input-only-action.c b/clutter/clutter/clutter-input-only-action.c
+index 51e95ace445..cba1a4da431 100644
+--- a/clutter/clutter/clutter-input-only-action.c
++++ b/clutter/clutter/clutter-input-only-action.c
+@@ -69,7 +69,7 @@ clutter_input_only_action_class_init (ClutterInputOnlyActionClass *klass)
+   GObjectClass *object_class = G_OBJECT_CLASS (klass);
+   ClutterActionClass *action_class = CLUTTER_ACTION_CLASS (klass);
+ 
+-  object_class->finalize = clutter_input_only_action_dispose;
++  object_class->dispose = clutter_input_only_action_dispose;
+ 
+   action_class->handle_event = clutter_input_only_action_handle_event;
+ }
+-- 
+GitLab
+
+
+From 07e07040dfb4f515a68bf58250f22609d5d9c097 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Sat, 21 Oct 2023 00:45:49 +0800
+Subject: [PATCH 23/32] monitor-manager/x11: Ignore errors when creating tiled
+ monitors
+
+The error is most likely a race where the tiled outputs disappeared
+before we had the chance to turn them into a whole monitor. Ignoring the
+error should be harmless, as we should be receive another RANDR event
+where we'd eventually fix things up.
+
+Closes: https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/7120
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3335>
+
+(cherry picked from commit 8d3696f39a0b3af725b7615f7e2ac74ce5e0bcbf)
+---
+ src/backends/x11/meta-monitor-manager-xrandr.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/backends/x11/meta-monitor-manager-xrandr.c b/src/backends/x11/meta-monitor-manager-xrandr.c
+index 128a34b9fb9..97ba112e8eb 100644
+--- a/src/backends/x11/meta-monitor-manager-xrandr.c
++++ b/src/backends/x11/meta-monitor-manager-xrandr.c
+@@ -770,9 +770,11 @@ meta_monitor_manager_xrandr_tiled_monitor_added (MetaMonitorManager *manager,
+       xrandr_monitor_info->outputs[i] = meta_output_get_id (output);
+     }
+ 
++  mtk_x11_error_trap_push (manager_xrandr->xdisplay);
+   XRRSetMonitor (manager_xrandr->xdisplay,
+                  DefaultRootWindow (manager_xrandr->xdisplay),
+                  xrandr_monitor_info);
++  mtk_x11_error_trap_pop (manager_xrandr->xdisplay);
+   XRRFreeMonitors (xrandr_monitor_info);
+ }
+ 
+-- 
+GitLab
+
+
+From 11abdf2bd1fd473b05110a7dfbd98b28e282eac0 Mon Sep 17 00:00:00 2001
+From: Mike Gorse <mgorse@suse.com>
+Date: Wed, 15 Nov 2023 17:58:29 -0600
+Subject: [PATCH 24/32] screen-cast/window-stream: Mark as configured
+
+This is needed for the pointer to be exposed to an existing libei session.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3403>
+
+(cherry picked from commit c1feb2dc40ee8c12988d4eceb56fdffb445cc8cd)
+---
+ src/backends/meta-screen-cast-window-stream.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/backends/meta-screen-cast-window-stream.c b/src/backends/meta-screen-cast-window-stream.c
+index 1c534971460..7704cb617a6 100644
+--- a/src/backends/meta-screen-cast-window-stream.c
++++ b/src/backends/meta-screen-cast-window-stream.c
+@@ -99,6 +99,7 @@ meta_screen_cast_window_stream_new (MetaScreenCastSession     *session,
+                          "cursor-mode", cursor_mode,
+                          "flags", flags,
+                          "window", window,
++                         "is-configured", TRUE,
+                          NULL);
+ }
+ 
+-- 
+GitLab
+
+
+From bde02a7b591c98e8e6884f35eebf9832f9c84f9b Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Wed, 15 Nov 2023 16:59:21 +0100
+Subject: [PATCH 25/32] window-actor/wayland: Sync geometry only when window is
+ mapped
+
+In some cases the window is not mapped when the geometry changes.
+Without the mapped window the surfaces are not mapped either and don't
+have a sensible allocation.
+
+This patch makes sure we abort syncing the geometry if the window is not
+mapped and also make sure we sync geometry when the actor eventually
+does get mapped.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/3152
+Fixes: 8f4ab53bd ("window-actor/wayland: Ensure to use allocation for black background check")
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3401>
+
+(cherry picked from commit 976bcef3d5981d1d923eba7867bf3da0e4b4c929)
+---
+ src/compositor/meta-window-actor-wayland.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/src/compositor/meta-window-actor-wayland.c b/src/compositor/meta-window-actor-wayland.c
+index d6f125ebf7b..eb073e7af94 100644
+--- a/src/compositor/meta-window-actor-wayland.c
++++ b/src/compositor/meta-window-actor-wayland.c
+@@ -538,6 +538,9 @@ meta_window_actor_wayland_sync_geometry (MetaWindowActor    *actor,
+   if (window->unmanaging)
+     return;
+ 
++  if (!clutter_actor_is_mapped (CLUTTER_ACTOR (actor)))
++    return;
++
+   if (maybe_configure_black_background (self,
+                                         &surfaces_width, &surfaces_height,
+                                         &background_width, &background_height))
+@@ -602,10 +605,26 @@ meta_window_actor_wayland_constructed (GObject *object)
+                               self->surface_container);
+ }
+ 
++static void
++meta_window_actor_wayland_map (ClutterActor *self)
++{
++  ClutterActorClass *parent_class =
++    CLUTTER_ACTOR_CLASS (meta_window_actor_wayland_parent_class);
++  MetaWindowActor *window_actor = META_WINDOW_ACTOR (self);
++  MetaWindow *window = meta_window_actor_get_meta_window (window_actor);
++  MtkRectangle actor_rect;
++
++  meta_window_get_buffer_rect (window, &actor_rect);
++  meta_window_actor_wayland_sync_geometry (window_actor, &actor_rect);
++
++  parent_class->map (self);
++}
++
+ static void
+ meta_window_actor_wayland_class_init (MetaWindowActorWaylandClass *klass)
+ {
+   MetaWindowActorClass *window_actor_class = META_WINDOW_ACTOR_CLASS (klass);
++  ClutterActorClass *clutter_actor_class = CLUTTER_ACTOR_CLASS (klass);
+   GObjectClass *object_class = G_OBJECT_CLASS (klass);
+ 
+   window_actor_class->get_scanout_candidate = meta_window_actor_wayland_get_scanout_candidate;
+@@ -621,6 +640,8 @@ meta_window_actor_wayland_class_init (MetaWindowActorWaylandClass *klass)
+   window_actor_class->sync_geometry = meta_window_actor_wayland_sync_geometry;
+   window_actor_class->is_single_surface_actor = meta_window_actor_wayland_is_single_surface_actor;
+ 
++  clutter_actor_class->map = meta_window_actor_wayland_map;
++
+   object_class->constructed = meta_window_actor_wayland_constructed;
+   object_class->dispose = meta_window_actor_wayland_dispose;
+ }
+-- 
+GitLab
+
+
+From 3debc3f04ebca6d058ad0df8d84ee9dfcbde7343 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Thu, 16 Nov 2023 22:53:11 +0100
+Subject: [PATCH 26/32] window-actor: Adjust sync_geometry
+
+At the end of the sync_actor_geometry function the window buffer_rect
+and the WindowActor position and size are the same and consistent.
+
+Call the virtual method at the end and let the implementations look at
+either the buffer_rect or the actor position/size itself.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3404>
+
+(cherry picked from commit 90d27e7b2ebd4979d9c622752d184dc8b80edecf)
+---
+ src/compositor/meta-window-actor-private.h |  3 +--
+ src/compositor/meta-window-actor-wayland.c | 14 ++++++--------
+ src/compositor/meta-window-actor-x11.c     |  3 +--
+ src/compositor/meta-window-actor.c         |  4 ++--
+ 4 files changed, 10 insertions(+), 14 deletions(-)
+
+diff --git a/src/compositor/meta-window-actor-private.h b/src/compositor/meta-window-actor-private.h
+index e79910d72c8..efd335f5710 100644
+--- a/src/compositor/meta-window-actor-private.h
++++ b/src/compositor/meta-window-actor-private.h
+@@ -33,8 +33,7 @@ struct _MetaWindowActorClass
+   void (*update_regions) (MetaWindowActor *actor);
+   gboolean (*can_freeze_commits) (MetaWindowActor *actor);
+ 
+-  void (*sync_geometry) (MetaWindowActor    *actor,
+-                         const MtkRectangle *actor_rect);
++  void (*sync_geometry) (MetaWindowActor *actor);
+   gboolean (*is_single_surface_actor) (MetaWindowActor *actor);
+ };
+ 
+diff --git a/src/compositor/meta-window-actor-wayland.c b/src/compositor/meta-window-actor-wayland.c
+index eb073e7af94..06bfb22ca8c 100644
+--- a/src/compositor/meta-window-actor-wayland.c
++++ b/src/compositor/meta-window-actor-wayland.c
+@@ -525,8 +525,7 @@ maybe_configure_black_background (MetaWindowActorWayland *self,
+ }
+ 
+ static void
+-meta_window_actor_wayland_sync_geometry (MetaWindowActor    *actor,
+-                                         const MtkRectangle *actor_rect)
++meta_window_actor_wayland_sync_geometry (MetaWindowActor *actor)
+ {
+   MetaWindowActorWayland *self = META_WINDOW_ACTOR_WAYLAND (actor);
+   ClutterActor *surface_container = CLUTTER_ACTOR (self->surface_container);
+@@ -545,6 +544,7 @@ meta_window_actor_wayland_sync_geometry (MetaWindowActor    *actor,
+                                         &surfaces_width, &surfaces_height,
+                                         &background_width, &background_height))
+     {
++      MtkRectangle actor_rect;
+       int geometry_scale;
+       int child_actor_width, child_actor_height;
+ 
+@@ -559,10 +559,11 @@ meta_window_actor_wayland_sync_geometry (MetaWindowActor    *actor,
+                                             NULL);
+         }
+ 
++      meta_window_get_buffer_rect (window, &actor_rect);
+       geometry_scale =
+         meta_window_actor_get_geometry_scale (actor);
+-      child_actor_width = actor_rect->width / geometry_scale;
+-      child_actor_height = actor_rect->height / geometry_scale;
++      child_actor_width = actor_rect.width / geometry_scale;
++      child_actor_height = actor_rect.height / geometry_scale;
+ 
+       clutter_actor_set_size (self->background,
+                               background_width, background_height);
+@@ -611,11 +612,8 @@ meta_window_actor_wayland_map (ClutterActor *self)
+   ClutterActorClass *parent_class =
+     CLUTTER_ACTOR_CLASS (meta_window_actor_wayland_parent_class);
+   MetaWindowActor *window_actor = META_WINDOW_ACTOR (self);
+-  MetaWindow *window = meta_window_actor_get_meta_window (window_actor);
+-  MtkRectangle actor_rect;
+ 
+-  meta_window_get_buffer_rect (window, &actor_rect);
+-  meta_window_actor_wayland_sync_geometry (window_actor, &actor_rect);
++  meta_window_actor_wayland_sync_geometry (window_actor);
+ 
+   parent_class->map (self);
+ }
+diff --git a/src/compositor/meta-window-actor-x11.c b/src/compositor/meta-window-actor-x11.c
+index 70c5fa642bf..9c686087ba9 100644
+--- a/src/compositor/meta-window-actor-x11.c
++++ b/src/compositor/meta-window-actor-x11.c
+@@ -1406,8 +1406,7 @@ meta_window_actor_x11_is_single_surface_actor (MetaWindowActor *actor)
+ }
+ 
+ static void
+-meta_window_actor_x11_sync_geometry (MetaWindowActor    *actor,
+-                                     const MtkRectangle *actor_rect)
++meta_window_actor_x11_sync_geometry (MetaWindowActor *actor)
+ {
+ }
+ 
+diff --git a/src/compositor/meta-window-actor.c b/src/compositor/meta-window-actor.c
+index 9074b24bbe7..d8a45f3556c 100644
+--- a/src/compositor/meta-window-actor.c
++++ b/src/compositor/meta-window-actor.c
+@@ -964,8 +964,6 @@ meta_window_actor_sync_actor_geometry (MetaWindowActor *self,
+   if (meta_window_actor_is_frozen (self) && !did_placement)
+     return META_WINDOW_ACTOR_CHANGE_POSITION | META_WINDOW_ACTOR_CHANGE_SIZE;
+ 
+-  META_WINDOW_ACTOR_GET_CLASS (self)->sync_geometry (self, &actor_rect);
+-
+   if (clutter_actor_has_allocation (actor))
+     {
+       ClutterActorBox box;
+@@ -996,6 +994,8 @@ meta_window_actor_sync_actor_geometry (MetaWindowActor *self,
+   if (changes & META_WINDOW_ACTOR_CHANGE_SIZE)
+     clutter_actor_set_size (actor, actor_rect.width, actor_rect.height);
+ 
++  META_WINDOW_ACTOR_GET_CLASS (self)->sync_geometry (self);
++
+   return changes;
+ }
+ 
+-- 
+GitLab
+
+
+From 5ec98126d32790fd6515f4209768d147d728c1f6 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Thu, 16 Nov 2023 22:59:30 +0100
+Subject: [PATCH 27/32] window-actor/wayland: Return success status from
+ syncing geometry
+
+We do this by  moving it to a helper function. We will use this to keep
+track of when syncing the geometry is actually needed in a later commit.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3404>
+
+(cherry picked from commit ee7f13fd8419700bc8508e7a3e5b2da26737fa31)
+---
+ src/compositor/meta-window-actor-wayland.c | 31 ++++++++++++++--------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/src/compositor/meta-window-actor-wayland.c b/src/compositor/meta-window-actor-wayland.c
+index 06bfb22ca8c..a31b0c95d91 100644
+--- a/src/compositor/meta-window-actor-wayland.c
++++ b/src/compositor/meta-window-actor-wayland.c
+@@ -524,21 +524,20 @@ maybe_configure_black_background (MetaWindowActorWayland *self,
+   return TRUE;
+ }
+ 
+-static void
+-meta_window_actor_wayland_sync_geometry (MetaWindowActor *actor)
++static gboolean
++do_sync_geometry (MetaWindowActorWayland *self)
+ {
+-  MetaWindowActorWayland *self = META_WINDOW_ACTOR_WAYLAND (actor);
++  MetaWindowActor *actor = META_WINDOW_ACTOR (self);
+   ClutterActor *surface_container = CLUTTER_ACTOR (self->surface_container);
+-  MetaWindow *window;
++  MetaWindow *window = meta_window_actor_get_meta_window (actor);
+   float surfaces_width, surfaces_height;
+   float background_width, background_height;
+ 
+-  window = meta_window_actor_get_meta_window (actor);
+   if (window->unmanaging)
+-    return;
++    return FALSE;
+ 
+   if (!clutter_actor_is_mapped (CLUTTER_ACTOR (actor)))
+-    return;
++    return FALSE;
+ 
+   if (maybe_configure_black_background (self,
+                                         &surfaces_width, &surfaces_height,
+@@ -576,6 +575,16 @@ meta_window_actor_wayland_sync_geometry (MetaWindowActor *actor)
+       clutter_actor_set_position (surface_container, 0, 0);
+       g_clear_pointer (&self->background, clutter_actor_destroy);
+     }
++
++  return TRUE;
++}
++
++static void
++meta_window_actor_wayland_sync_geometry (MetaWindowActor *actor)
++{
++  MetaWindowActorWayland *self = META_WINDOW_ACTOR_WAYLAND (actor);
++
++  do_sync_geometry (self);
+ }
+ 
+ static void
+@@ -607,15 +616,15 @@ meta_window_actor_wayland_constructed (GObject *object)
+ }
+ 
+ static void
+-meta_window_actor_wayland_map (ClutterActor *self)
++meta_window_actor_wayland_map (ClutterActor *actor)
+ {
++  MetaWindowActorWayland *self = META_WINDOW_ACTOR_WAYLAND (actor);
+   ClutterActorClass *parent_class =
+     CLUTTER_ACTOR_CLASS (meta_window_actor_wayland_parent_class);
+-  MetaWindowActor *window_actor = META_WINDOW_ACTOR (self);
+ 
+-  meta_window_actor_wayland_sync_geometry (window_actor);
++  do_sync_geometry (self);
+ 
+-  parent_class->map (self);
++  parent_class->map (actor);
+ }
+ 
+ static void
+-- 
+GitLab
+
+
+From 99d19fd375dd093cffb6903935c3be89ba8a3f8b Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Fri, 17 Nov 2023 16:57:28 +0100
+Subject: [PATCH 28/32] window-actor/wayland: Move map method to a more
+ appropriate place
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3404>
+
+(cherry picked from commit 2dbfc1c23d7eca1aae2d2cb875ebf620233258ae)
+---
+ src/compositor/meta-window-actor-wayland.c | 24 +++++++++++-----------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/src/compositor/meta-window-actor-wayland.c b/src/compositor/meta-window-actor-wayland.c
+index a31b0c95d91..9d55dd71285 100644
+--- a/src/compositor/meta-window-actor-wayland.c
++++ b/src/compositor/meta-window-actor-wayland.c
+@@ -587,6 +587,18 @@ meta_window_actor_wayland_sync_geometry (MetaWindowActor *actor)
+   do_sync_geometry (self);
+ }
+ 
++static void
++meta_window_actor_wayland_map (ClutterActor *actor)
++{
++  MetaWindowActorWayland *self = META_WINDOW_ACTOR_WAYLAND (actor);
++  ClutterActorClass *parent_class =
++    CLUTTER_ACTOR_CLASS (meta_window_actor_wayland_parent_class);
++
++  do_sync_geometry (self);
++
++  parent_class->map (actor);
++}
++
+ static void
+ meta_window_actor_wayland_dispose (GObject *object)
+ {
+@@ -615,18 +627,6 @@ meta_window_actor_wayland_constructed (GObject *object)
+                               self->surface_container);
+ }
+ 
+-static void
+-meta_window_actor_wayland_map (ClutterActor *actor)
+-{
+-  MetaWindowActorWayland *self = META_WINDOW_ACTOR_WAYLAND (actor);
+-  ClutterActorClass *parent_class =
+-    CLUTTER_ACTOR_CLASS (meta_window_actor_wayland_parent_class);
+-
+-  do_sync_geometry (self);
+-
+-  parent_class->map (actor);
+-}
+-
+ static void
+ meta_window_actor_wayland_class_init (MetaWindowActorWaylandClass *klass)
+ {
+-- 
+GitLab
+
+
+From 06dc80030d0065834eea06376572f2c2d23defd8 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Fri, 17 Nov 2023 16:57:28 +0100
+Subject: [PATCH 29/32] window-actor/wayland: Map the window before trying to
+ sync geometry
+
+We need to chain up to the parent class to make sure the
+WindowActorWayland is actually mapped which is required for the
+sync_geometry_internal function to succeed.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3404>
+
+(cherry picked from commit 9e036bfd23033a70ff7e16efee7c184f38b72cc4)
+---
+ src/compositor/meta-window-actor-wayland.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/compositor/meta-window-actor-wayland.c b/src/compositor/meta-window-actor-wayland.c
+index 9d55dd71285..7ea99018425 100644
+--- a/src/compositor/meta-window-actor-wayland.c
++++ b/src/compositor/meta-window-actor-wayland.c
+@@ -594,9 +594,9 @@ meta_window_actor_wayland_map (ClutterActor *actor)
+   ClutterActorClass *parent_class =
+     CLUTTER_ACTOR_CLASS (meta_window_actor_wayland_parent_class);
+ 
+-  do_sync_geometry (self);
+-
+   parent_class->map (actor);
++
++  do_sync_geometry (self);
+ }
+ 
+ static void
+-- 
+GitLab
+
+
+From 8b18a52a9b3b35688cb362b2417f71bb3e7e581b Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Thu, 16 Nov 2023 23:02:57 +0100
+Subject: [PATCH 30/32] window-actor/wayland: Keep track of when the geometry
+ needs to be synced
+
+The window actor can be mapped every frame, e.g. when it is dragged in
+the overview. This commit keeps track when the geometry changed and we
+didn't managed to sync the geometry yet and need to sync it at a later
+time.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3404>
+
+(cherry picked from commit 63c6fe11fb2aa4eb648dd31d34134279873670ae)
+---
+ src/compositor/meta-window-actor-wayland.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/src/compositor/meta-window-actor-wayland.c b/src/compositor/meta-window-actor-wayland.c
+index 7ea99018425..96fc708111a 100644
+--- a/src/compositor/meta-window-actor-wayland.c
++++ b/src/compositor/meta-window-actor-wayland.c
+@@ -50,6 +50,7 @@ struct _MetaWindowActorWayland
+   ClutterActor *background;
+   MetaSurfaceContainerActorWayland *surface_container;
+   gulong highest_scale_monitor_handler_id;
++  gboolean needs_sync;
+ };
+ 
+ static void cullable_iface_init (MetaCullableInterface *iface);
+@@ -584,7 +585,7 @@ meta_window_actor_wayland_sync_geometry (MetaWindowActor *actor)
+ {
+   MetaWindowActorWayland *self = META_WINDOW_ACTOR_WAYLAND (actor);
+ 
+-  do_sync_geometry (self);
++  self->needs_sync = !do_sync_geometry (self);
+ }
+ 
+ static void
+@@ -596,7 +597,11 @@ meta_window_actor_wayland_map (ClutterActor *actor)
+ 
+   parent_class->map (actor);
+ 
+-  do_sync_geometry (self);
++  if (self->needs_sync)
++    {
++      do_sync_geometry (self);
++      self->needs_sync = FALSE;
++    }
+ }
+ 
+ static void
+-- 
+GitLab
+
+
+From 77571d5d1bbeb67962f2ea94df0910f96d8e1610 Mon Sep 17 00:00:00 2001
+From: Ivan Molodetskikh <yalterz@gmail.com>
+Date: Wed, 15 Nov 2023 08:50:14 +0400
+Subject: [PATCH 31/32] cogl/trace: Add check for failed sysprof context
+ creation
+
+This can fail for example when passing an invalid filename to
+mutter --profile, which leads to assertion failures down the line.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3397>
+
+(cherry picked from commit ebba651c8125cac26e159d4094d15f826ed18055)
+---
+ cogl/cogl/cogl-trace.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/cogl/cogl/cogl-trace.c b/cogl/cogl/cogl-trace.c
+index b4bc3345218..e2b3505179d 100644
+--- a/cogl/cogl/cogl-trace.c
++++ b/cogl/cogl/cogl-trace.c
+@@ -102,6 +102,9 @@ cogl_trace_context_new (int         fd,
+       writer = sysprof_capture_writer_new (COGL_TRACE_OUTPUT_FILE, BUFFER_LENGTH);
+     }
+ 
++  if (!writer)
++    return NULL;
++
+   context = g_new0 (CoglTraceContext, 1);
+   context->writer = writer;
+   g_atomic_ref_count_init (&context->ref_count);
+@@ -144,6 +147,13 @@ setup_trace_context (int          fd,
+ 
+   cogl_trace_context = cogl_trace_context_new (fd, filename);
+ 
++  if (!cogl_trace_context)
++    {
++      g_set_error (error, G_IO_ERROR, G_IO_ERROR_FAILED,
++                   "Failed to setup trace context");
++      return FALSE;
++    }
++
+   return TRUE;
+ }
+ 
+-- 
+GitLab
+
+
+From 3781736ed2970af6495684372a7e7b7880749e60 Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Mon, 13 Nov 2023 10:55:46 +0100
+Subject: [PATCH 32/32] backends/native: Avoid redundant changes to sticky keys
+ state mask
+
+Sticky keys configuration changes reset the pressed modifier state mask,
+even though the XKB state might already match with the expected new
+state. In those cases we can avoid the XKB state mask update completely.
+
+This also fixes a crash at initialization with sticky keys toggled on,
+since configuring the device a11y settings will trigger a XKB state
+mask merely reassuring the initial state with no modifiers pressed,
+while the connection between the ClutterSeat and the impl object has
+not been set up yet. This crash was introduced by commit 00bb4190b
+("backends/native: Drop device_native->seat_impl field").
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3392>
+
+(cherry picked from commit 9399c984cca45f5d3cecf337c3dbe62c2d4470f7)
+---
+ src/backends/native/meta-input-device-native.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/backends/native/meta-input-device-native.c b/src/backends/native/meta-input-device-native.c
+index 530d6ce159e..577a47ada91 100644
+--- a/src/backends/native/meta-input-device-native.c
++++ b/src/backends/native/meta-input-device-native.c
+@@ -488,6 +488,10 @@ update_internal_xkb_state (MetaInputDeviceNative *device,
+   xkb_mod_mask_t group_mods;
+   struct xkb_state *xkb_state;
+ 
++  if (device->stickykeys_latched_mask == new_latched_mask &&
++      device->stickykeys_locked_mask == new_locked_mask)
++    return;
++
+   g_rw_lock_writer_lock (&seat_impl->state_lock);
+ 
+   xkb_state = meta_seat_impl_get_xkb_state_in_impl (seat_impl);
+-- 
+GitLab
+
