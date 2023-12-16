@@ -65,7 +65,7 @@
 Name:           mesa
 Summary:        Mesa graphics libraries
 Version:        23.3.1
-Release:        10%{?dist}.clang
+Release:        11%{?dist}.clang
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
 URL:            https://www.mesa3d.org
 
@@ -379,6 +379,7 @@ export RUSTFLAGS="%build_rustflags"
   -Dplatforms=x11,wayland \
   -Ddri3=enabled \
   -Dosmesa=true \
+  --buildtype=release \
 %if 0%{?with_hardware}
   -Dgallium-drivers=swrast,virgl,nouveau%{?with_r300:,r300}%{?with_crocus:,crocus}%{?with_i915:,i915}%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi}%{?with_r600:,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink} \
 %else
