@@ -185,7 +185,10 @@ the functionality of the installed %{name} package.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-%meson -Degl_device=true -Dwayland_eglstream=true --buildtype=release
+export CFLAGS="%{optflags} -O3 -flto=thin"
+export CXXFLAGS="%{optflags} -O3 -flto=thin"
+export LDFLAGS="%{optflags} -O3"
+%meson -Degl_device=true -Dwayland_eglstream=true
 %meson_build
 
 %install
