@@ -25,37 +25,37 @@ URL:           https://www.gnome.org
 Source0:       https://download.gnome.org/sources/%{name}/45/%{name}-%{tarball_version}.tar.xz
 
 # Work-around for OpenJDK's compliance test
-Patch0: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
-Patch1: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/mutter-42.alpha-disable-tegra.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/mutter-42.alpha-disable-tegra.patch
 
 # https://pagure.io/fedora-workstation/issue/79
-Patch2: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
 
-Patch3: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329	
 # Modified to add the change from
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837	
 # which solves the problems reported with #3329 alone
-Patch4: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-modified-3329.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-modified-3329.patch
 
 # Draft: Dynamic triple/double buffering (v4) 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
-Patch5: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/1441.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/1441.patch
 
 # backends/native: Main thread rt-scheduler: experimental feature no more 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3296
-Patch6: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3296.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3296.patch
 
 # backports for 45.3
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3457
-Patch7: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3457.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3457.patch
 
-Patch9: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter_increase_check_alive_timeout.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter_increase_check_alive_timeout.patch
 
-Patch10: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/autorotate.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/autorotate.patch
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)

@@ -24,25 +24,25 @@ URL:           https://www.gnome.org
 Source0:       https://download.gnome.org/sources/%{name}/44/%{name}-%{tarball_version}.tar.xz
 
 # Work-around for OpenJDK's compliance test
-Patch0: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
-Patch1: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter-42.alpha-disable-tegra.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter-42.alpha-disable-tegra.patch
 
 # https://pagure.io/fedora-workstation/issue/79
-Patch2: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
 
 # The triple buffer himself
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
-Patch4: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/1441.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/1441.patch
 
 # GPU optimizations for partial surface update 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2965
-Patch6:	https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/2965.patch
+Patch:	https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/2965.patch
 
-Patch7: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter_increase_check_alive_timeout.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter_increase_check_alive_timeout.patch
 
-Patch10: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/autorotate.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/autorotate.patch
 
 
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
