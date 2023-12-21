@@ -1,7 +1,7 @@
 From 15aad038d826ae34978186c24589c755010a9904 Mon Sep 17 00:00:00 2001
 From: Sebastian Wick <sebastian.wick@redhat.com>
 Date: Thu, 14 Dec 2023 15:35:14 +0100
-Subject: [PATCH 01/32] shaped-texture: Reset pipelines when texture format
+Subject: [PATCH 01/40] shaped-texture: Reset pipelines when texture format
  changes
 
 Changing the MultiTexture may require a different set of pipelines when
@@ -70,7 +70,7 @@ GitLab
 From 04a48d0061f33cf09bd45f71f4836ce0d273eb50 Mon Sep 17 00:00:00 2001
 From: Christopher Fore <csfore@posteo.net>
 Date: Thu, 14 Dec 2023 23:17:11 -0500
-Subject: [PATCH 02/32] backends: Include unistd.h to fix compilation on musl
+Subject: [PATCH 02/40] backends: Include unistd.h to fix compilation on musl
 
 Musl doesn't seem to include this by default so explicitly including it
 should fix compilation on Musl.
@@ -110,7 +110,7 @@ GitLab
 From 2f023608158faf5c3c370f29913994037134feb0 Mon Sep 17 00:00:00 2001
 From: Sebastian Keller <skeller@gnome.org>
 Date: Fri, 15 Dec 2023 00:47:34 +0100
-Subject: [PATCH 03/32] clutter/actor: Don't write uninitialized out values on
+Subject: [PATCH 03/40] clutter/actor: Don't write uninitialized out values on
  failed transform
 
 clutter_actor_get_transformed_position() would write the uninitialized
@@ -158,7 +158,7 @@ GitLab
 From a035babcd566461744d967b2640d9a3eaa7f1751 Mon Sep 17 00:00:00 2001
 From: Daniel van Vugt <daniel.van.vugt@canonical.com>
 Date: Thu, 8 Sep 2022 16:45:29 +0800
-Subject: [PATCH 04/32] kms: Avoid queuing multiple (un)assignments to the same
+Subject: [PATCH 04/40] kms: Avoid queuing multiple (un)assignments to the same
  plane in an update
 
 Just like we already do in `meta_kms_update_assign_plane`.
@@ -190,7 +190,7 @@ GitLab
 From e2cea07310c23d1a6266dc31f2f9add44a01d7fe Mon Sep 17 00:00:00 2001
 From: Peter Hutterer <peter.hutterer@who-t.net>
 Date: Mon, 13 Nov 2023 10:42:00 +1000
-Subject: [PATCH 05/32] backends/x11: Fix tab/space indentation issue
+Subject: [PATCH 05/40] backends/x11: Fix tab/space indentation issue
 
 Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3410>
 
@@ -227,7 +227,7 @@ GitLab
 From 19bcafb0e491ac3bf17d4616228101130fd9db70 Mon Sep 17 00:00:00 2001
 From: Peter Hutterer <peter.hutterer@who-t.net>
 Date: Mon, 20 Nov 2023 14:31:37 +1000
-Subject: [PATCH 06/32] backends/native: Set the tool for relative events
+Subject: [PATCH 06/40] backends/native: Set the tool for relative events
 
 Otherwise a tablet in relative mode will never have a tool set and
 nothing happens on motion events - meta_wayland_tablet_seat_update()
@@ -260,7 +260,7 @@ GitLab
 From 643e8a9e29ede36c4d4c9899e6643c4024e12f01 Mon Sep 17 00:00:00 2001
 From: Peter Hutterer <peter.hutterer@who-t.net>
 Date: Mon, 20 Nov 2023 14:49:30 +1000
-Subject: [PATCH 07/32] backends/native: Pass the axes down to the relative
+Subject: [PATCH 07/40] backends/native: Pass the axes down to the relative
  clutter motion event
 
 Otherwise we get a happy segfault when we're trying broadcast_axis()
@@ -353,7 +353,7 @@ GitLab
 From fcceececa5e0308936622810eabf3df08c7dfac5 Mon Sep 17 00:00:00 2001
 From: Peter Hutterer <peter.hutterer@who-t.net>
 Date: Wed, 22 Nov 2023 10:53:51 +1000
-Subject: [PATCH 08/32] backends/native: Fix whitespace
+Subject: [PATCH 08/40] backends/native: Fix whitespace
 
 Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3410>
 
@@ -382,7 +382,7 @@ GitLab
 From 10a6c46658ac75be7db15f82d97dce90bc1d3879 Mon Sep 17 00:00:00 2001
 From: Peter Hutterer <peter.hutterer@who-t.net>
 Date: Wed, 22 Nov 2023 10:55:10 +1000
-Subject: [PATCH 09/32] backends/native: Shuffle static constrain functions up
+Subject: [PATCH 09/40] backends/native: Shuffle static constrain functions up
 
 No functional changes, this just moves two functions up to make the
 follow-up patch more obvious.
@@ -551,7 +551,7 @@ GitLab
 From 51bc500b4824f5d1ec27795ab7fa30c61059f8ba Mon Sep 17 00:00:00 2001
 From: Peter Hutterer <peter.hutterer@who-t.net>
 Date: Mon, 20 Nov 2023 14:28:16 +1000
-Subject: [PATCH 10/32] backends/native: If the tablet tool is relative,
+Subject: [PATCH 10/40] backends/native: If the tablet tool is relative,
  constrain it normally
 
 If we're moving our tool like a relative pointer, constrain to our
@@ -663,7 +663,7 @@ GitLab
 From 562508d42b89bb6e3c6d973a53aef28bde7c7d8d Mon Sep 17 00:00:00 2001
 From: Olivier Fourdan <ofourdan@redhat.com>
 Date: Thu, 7 Dec 2023 16:12:15 +0100
-Subject: [PATCH 11/32] remote-desktop/eis: Fix ConnectToEIS device-types
+Subject: [PATCH 11/40] remote-desktop/eis: Fix ConnectToEIS device-types
 
 The change to the device types in xdg-desktop-portal-gnome needs to be
 reflected in mutter as well, otherwise the device types are not properly
@@ -711,7 +711,7 @@ GitLab
 From a06be4529f9090dfa380882006f6b12f4667a369 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
 Date: Wed, 6 Dec 2023 15:34:47 +0100
-Subject: [PATCH 12/32] wayland/idle-inhibit: Handle NULL inhibitor->actor
+Subject: [PATCH 12/40] wayland/idle-inhibit: Handle NULL inhibitor->actor
 
 Fixes: a3c62bf8aa7a ("wayland/idle-inhibit: Add state tracking to fix races")
 Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3444>
@@ -755,7 +755,7 @@ GitLab
 From ba197def1a28c04ab36805ca5467439554404431 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
 Date: Wed, 6 Dec 2023 15:41:43 +0100
-Subject: [PATCH 13/32] wayland/idle-inhibit: Pass actor instance in
+Subject: [PATCH 13/40] wayland/idle-inhibit: Pass actor instance in
  on_actor_changed
 
 This matches the other g_signal_connect / g_clear_signal_handler calls
@@ -792,7 +792,7 @@ GitLab
 From 1dec3afeb57715060b59f0cd50e2bd94c80640a2 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
 Date: Wed, 6 Dec 2023 16:09:30 +0100
-Subject: [PATCH 14/32] tree-wide: Fix spelling of "inhibition"
+Subject: [PATCH 14/40] tree-wide: Fix spelling of "inhibition"
 
 Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3444>
 
@@ -894,7 +894,7 @@ GitLab
 From 3188d7e717d4a7215a0fff6a69d43145cccabd3d Mon Sep 17 00:00:00 2001
 From: Qiu Wenbo <qiuwenbo@kylinos.com.cn>
 Date: Wed, 29 Nov 2023 18:23:33 +0800
-Subject: [PATCH 15/32] cogl: Fix memory allocation of CoglGLContext
+Subject: [PATCH 15/40] cogl: Fix memory allocation of CoglGLContext
 
 Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3440>
 
@@ -923,7 +923,7 @@ GitLab
 From ff0cdcb46392a9100fe06351e38dbb0d672c5066 Mon Sep 17 00:00:00 2001
 From: Carlos Garnacho <carlosg@gnome.org>
 Date: Sat, 2 Dec 2023 21:23:45 +0100
-Subject: [PATCH 16/32] ci: Add fallback to $CI_COMMIT_TAG for tag pipelines
+Subject: [PATCH 16/40] ci: Add fallback to $CI_COMMIT_TAG for tag pipelines
 
 The script to check out the mutter repository is missing the
 case of tag pipelines, and resorts to CI_DEFAULT_BRANCH. Add
@@ -958,7 +958,7 @@ GitLab
 From a98f1c960808eac5089a7d4032c384574ee5d1f6 Mon Sep 17 00:00:00 2001
 From: Ivan Molodetskikh <yalterz@gmail.com>
 Date: Tue, 28 Nov 2023 08:35:50 +0400
-Subject: [PATCH 17/32] clutter/pick-stack: Add an allocation check to
+Subject: [PATCH 17/40] clutter/pick-stack: Add an allocation check to
  calculate_clear_area ()
 
 We might pick an actor that needs relayout. I've seen this happen inside
@@ -1007,7 +1007,7 @@ GitLab
 From 951f77738ccf82351fcee49ffe9b74b8f523f4ef Mon Sep 17 00:00:00 2001
 From: Carlos Garnacho <carlosg@gnome.org>
 Date: Fri, 24 Nov 2023 12:37:03 +0100
-Subject: [PATCH 18/32] core: Disconnect notify::is-grabbed signal when closing
+Subject: [PATCH 18/40] core: Disconnect notify::is-grabbed signal when closing
  display
 
 Given destruction order, the display goes away before the stage, so
@@ -1050,7 +1050,7 @@ GitLab
 From 27fa81a711e065ca476f70c2ff5c8caa2812e1dc Mon Sep 17 00:00:00 2001
 From: Daniel van Vugt <daniel.van.vugt@canonical.com>
 Date: Tue, 30 May 2023 17:18:19 +0800
-Subject: [PATCH 19/32] native/render-device-egl-stream: Remove unused variable
+Subject: [PATCH 19/40] native/render-device-egl-stream: Remove unused variable
 
 Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/2905>
 
@@ -1078,7 +1078,7 @@ GitLab
 From 9155df0091fae94d4f48058c67796d2b3c006102 Mon Sep 17 00:00:00 2001
 From: Daniel van Vugt <daniel.van.vugt@canonical.com>
 Date: Thu, 22 Jun 2023 17:55:07 +0800
-Subject: [PATCH 20/32] backends/native: Count MetaRenderDeviceEglStream
+Subject: [PATCH 20/40] backends/native: Count MetaRenderDeviceEglStream
  instances externally
 
 `count_mode_setting_devices` was incorrect in both name and in function.
@@ -1200,7 +1200,7 @@ GitLab
 From 79ba0a58be1a777e3621cdd1f9c04e55cbf3f0ab Mon Sep 17 00:00:00 2001
 From: Daniel van Vugt <daniel.van.vugt@canonical.com>
 Date: Tue, 21 Nov 2023 17:26:15 +0800
-Subject: [PATCH 21/32] clutter/actor: Handle
+Subject: [PATCH 21/40] clutter/actor: Handle
  _clutter_actor_get_debug_name(NULL)
 
 NULL actor pointers seem to arise sometimes in `clutter_stage_update_device`
@@ -1241,7 +1241,7 @@ GitLab
 From 43f633a247ae950dddc4882a1866875100a18c9f Mon Sep 17 00:00:00 2001
 From: Sebastian Keller <skeller@gnome.org>
 Date: Mon, 20 Nov 2023 11:46:13 +0100
-Subject: [PATCH 22/32] clutter/input-only-action: Don't override finalize with
+Subject: [PATCH 22/40] clutter/input-only-action: Don't override finalize with
  dispose
 
 This was resulting in the GObject never being properly finalized,
@@ -1275,7 +1275,7 @@ GitLab
 From 07e07040dfb4f515a68bf58250f22609d5d9c097 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
 Date: Sat, 21 Oct 2023 00:45:49 +0800
-Subject: [PATCH 23/32] monitor-manager/x11: Ignore errors when creating tiled
+Subject: [PATCH 23/40] monitor-manager/x11: Ignore errors when creating tiled
  monitors
 
 The error is most likely a race where the tiled outputs disappeared
@@ -1314,7 +1314,7 @@ GitLab
 From 11abdf2bd1fd473b05110a7dfbd98b28e282eac0 Mon Sep 17 00:00:00 2001
 From: Mike Gorse <mgorse@suse.com>
 Date: Wed, 15 Nov 2023 17:58:29 -0600
-Subject: [PATCH 24/32] screen-cast/window-stream: Mark as configured
+Subject: [PATCH 24/40] screen-cast/window-stream: Mark as configured
 
 This is needed for the pointer to be exposed to an existing libei session.
 
@@ -1344,7 +1344,7 @@ GitLab
 From bde02a7b591c98e8e6884f35eebf9832f9c84f9b Mon Sep 17 00:00:00 2001
 From: Sebastian Wick <sebastian.wick@redhat.com>
 Date: Wed, 15 Nov 2023 16:59:21 +0100
-Subject: [PATCH 25/32] window-actor/wayland: Sync geometry only when window is
+Subject: [PATCH 25/40] window-actor/wayland: Sync geometry only when window is
  mapped
 
 In some cases the window is not mapped when the geometry changes.
@@ -1421,7 +1421,7 @@ GitLab
 From 3debc3f04ebca6d058ad0df8d84ee9dfcbde7343 Mon Sep 17 00:00:00 2001
 From: Sebastian Wick <sebastian.wick@redhat.com>
 Date: Thu, 16 Nov 2023 22:53:11 +0100
-Subject: [PATCH 26/32] window-actor: Adjust sync_geometry
+Subject: [PATCH 26/40] window-actor: Adjust sync_geometry
 
 At the end of the sync_actor_geometry function the window buffer_rect
 and the WindowActor position and size are the same and consistent.
@@ -1545,7 +1545,7 @@ GitLab
 From 5ec98126d32790fd6515f4209768d147d728c1f6 Mon Sep 17 00:00:00 2001
 From: Sebastian Wick <sebastian.wick@redhat.com>
 Date: Thu, 16 Nov 2023 22:59:30 +0100
-Subject: [PATCH 27/32] window-actor/wayland: Return success status from
+Subject: [PATCH 27/40] window-actor/wayland: Return success status from
  syncing geometry
 
 We do this by  moving it to a helper function. We will use this to keep
@@ -1634,7 +1634,7 @@ GitLab
 From 99d19fd375dd093cffb6903935c3be89ba8a3f8b Mon Sep 17 00:00:00 2001
 From: Sebastian Wick <sebastian.wick@redhat.com>
 Date: Fri, 17 Nov 2023 16:57:28 +0100
-Subject: [PATCH 28/32] window-actor/wayland: Move map method to a more
+Subject: [PATCH 28/40] window-actor/wayland: Move map method to a more
  appropriate place
 
 Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3404>
@@ -1693,7 +1693,7 @@ GitLab
 From 06dc80030d0065834eea06376572f2c2d23defd8 Mon Sep 17 00:00:00 2001
 From: Sebastian Wick <sebastian.wick@redhat.com>
 Date: Fri, 17 Nov 2023 16:57:28 +0100
-Subject: [PATCH 29/32] window-actor/wayland: Map the window before trying to
+Subject: [PATCH 29/40] window-actor/wayland: Map the window before trying to
  sync geometry
 
 We need to chain up to the parent class to make sure the
@@ -1730,7 +1730,7 @@ GitLab
 From 8b18a52a9b3b35688cb362b2417f71bb3e7e581b Mon Sep 17 00:00:00 2001
 From: Sebastian Wick <sebastian.wick@redhat.com>
 Date: Thu, 16 Nov 2023 23:02:57 +0100
-Subject: [PATCH 30/32] window-actor/wayland: Keep track of when the geometry
+Subject: [PATCH 30/40] window-actor/wayland: Keep track of when the geometry
  needs to be synced
 
 The window actor can be mapped every frame, e.g. when it is dragged in
@@ -1786,7 +1786,7 @@ GitLab
 From 77571d5d1bbeb67962f2ea94df0910f96d8e1610 Mon Sep 17 00:00:00 2001
 From: Ivan Molodetskikh <yalterz@gmail.com>
 Date: Wed, 15 Nov 2023 08:50:14 +0400
-Subject: [PATCH 31/32] cogl/trace: Add check for failed sysprof context
+Subject: [PATCH 31/40] cogl/trace: Add check for failed sysprof context
  creation
 
 This can fail for example when passing an invalid filename to
@@ -1834,7 +1834,7 @@ GitLab
 From 3781736ed2970af6495684372a7e7b7880749e60 Mon Sep 17 00:00:00 2001
 From: Carlos Garnacho <carlosg@gnome.org>
 Date: Mon, 13 Nov 2023 10:55:46 +0100
-Subject: [PATCH 32/32] backends/native: Avoid redundant changes to sticky keys
+Subject: [PATCH 32/40] backends/native: Avoid redundant changes to sticky keys
  state mask
 
 Sticky keys configuration changes reset the pressed modifier state mask,
@@ -1870,6 +1870,559 @@ index 530d6ce159e..577a47ada91 100644
    g_rw_lock_writer_lock (&seat_impl->state_lock);
  
    xkb_state = meta_seat_impl_get_xkb_state_in_impl (seat_impl);
+-- 
+GitLab
+
+
+From 5cdb2a1e73cb65133f95c48d27121a91de2c4968 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Tue, 19 Dec 2023 21:41:02 +0100
+Subject: [PATCH 33/40] multi-texture-format: Always use the tex coords of the
+ first plane
+
+The texture coordinates of all planes should be the same in theory so
+using the coordinates of the first plane works.
+
+The reason for this change is that Cogl somehow doesn't manage to get us
+the correct coordinates for the 3rd plane in some circumstances. This is
+really a workaround but not wrong in any way.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/3176
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3469>
+
+(cherry picked from commit c0832b99d8a76a474a2ac7c15b4f7899531e20a6)
+---
+ src/compositor/meta-multi-texture-format.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/compositor/meta-multi-texture-format.c b/src/compositor/meta-multi-texture-format.c
+index 9f338e584bf..86f37839c7d 100644
+--- a/src/compositor/meta-multi-texture-format.c
++++ b/src/compositor/meta-multi-texture-format.c
+@@ -61,22 +61,22 @@ static const char rgba_shader[] =
+ static const char y_xuxv_shader[] =
+   "vec4 yuva = vec4(0.0, 0.0, 0.0, cogl_color_in.a);                        \n"
+   "yuva.x = texture2D(cogl_sampler0, cogl_tex_coord0_in.st).x;              \n"
+-  "yuva.yz = texture2D(cogl_sampler1, cogl_tex_coord1_in.st).ga;            \n"
++  "yuva.yz = texture2D(cogl_sampler1, cogl_tex_coord0_in.st).ga;            \n"
+   "cogl_color_out = yuv_to_rgb(yuva);                                       \n";
+ 
+ /* Shader for 1 Y-plane and 1 UV-plane */
+ static const char y_uv_shader[] =
+   "vec4 yuva = vec4(0.0, 0.0, 0.0, cogl_color_in.a);                        \n"
+   "yuva.x = texture2D(cogl_sampler0, cogl_tex_coord0_in.st).x;              \n"
+-  "yuva.yz = texture2D(cogl_sampler1, cogl_tex_coord1_in.st).rg;            \n"
++  "yuva.yz = texture2D(cogl_sampler1, cogl_tex_coord0_in.st).rg;            \n"
+   "cogl_color_out = yuv_to_rgb(yuva);                                       \n";
+ 
+ /* Shader for 1 Y-plane, 1 U-plane and 1 V-plane */
+ static const char y_u_v_shader[] =
+   "vec4 yuva = vec4(0.0, 0.0, 0.0, cogl_color_in.a);                        \n"
+   "yuva.x = texture2D(cogl_sampler0, cogl_tex_coord0_in.st).x;              \n"
+-  "yuva.y = texture2D(cogl_sampler1, cogl_tex_coord1_in.st).x;              \n"
+-  "yuva.z = texture2D(cogl_sampler2, cogl_tex_coord2_in.st).x;              \n"
++  "yuva.y = texture2D(cogl_sampler1, cogl_tex_coord0_in.st).x;              \n"
++  "yuva.z = texture2D(cogl_sampler2, cogl_tex_coord0_in.st).x;              \n"
+   "cogl_color_out = yuv_to_rgb(yuva);                                       \n";
+ 
+ typedef struct _MetaMultiTextureFormatInfo
+-- 
+GitLab
+
+
+From ab85b888a7ad46638ec6b9d5488ec318bb1f699b Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Tue, 19 Dec 2023 19:29:06 +0100
+Subject: [PATCH 34/40] texture-mipmap: Handle textures with width or height of
+ 1
+
+Calculating the mipmap width as half of the texture width leads to a
+mipmap width of zero for textures with width of 1 which leads to an
+early exit instead of a mipmap texture.
+
+Fixes: 16fa2100d ("shaped-texture: Stop using MetaTextureTower and use GL mipmapping instead")
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3468>
+
+(cherry picked from commit 54c5ea9c13be9af13c16efec6147157a6c0a6455)
+---
+ src/compositor/meta-texture-mipmap.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/compositor/meta-texture-mipmap.c b/src/compositor/meta-texture-mipmap.c
+index e3a127cd2cb..7be0e33dd0c 100644
+--- a/src/compositor/meta-texture-mipmap.c
++++ b/src/compositor/meta-texture-mipmap.c
+@@ -151,8 +151,8 @@ ensure_mipmap_texture (MetaTextureMipmap *mipmap)
+    * then just use the original texture instead of mipmap texture, which is
+    * faster anyway.
+    */
+-  width = meta_multi_texture_get_width (mipmap->base_texture) / 2;
+-  height = meta_multi_texture_get_height (mipmap->base_texture) / 2;
++  width = meta_multi_texture_get_width (mipmap->base_texture);
++  height = meta_multi_texture_get_height (mipmap->base_texture);
+ 
+   if (!width || !height)
+     {
+@@ -160,6 +160,9 @@ ensure_mipmap_texture (MetaTextureMipmap *mipmap)
+       return;
+     }
+ 
++  width = MAX (width / 2, 1);
++  height = MAX (height / 2, 1);
++
+   if (!mipmap->mipmap_texture ||
+       meta_multi_texture_get_width (mipmap->mipmap_texture) != width ||
+       meta_multi_texture_get_height (mipmap->mipmap_texture) != height)
+-- 
+GitLab
+
+
+From 1647ce712c3eebd50f8da0a0b7815d9cca7a68f0 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Tue, 19 Dec 2023 19:25:00 +0100
+Subject: [PATCH 35/40] shaped-texture: Don't use mipmaps for small textures
+
+Mipmapping extremely small textures is pointless. We chose a lower limit
+of 8 pixels in each direction.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3468>
+
+(cherry picked from commit 4b8798a80098e568c2717814cad9599e8e3ad2c8)
+---
+ src/compositor/meta-shaped-texture.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/src/compositor/meta-shaped-texture.c b/src/compositor/meta-shaped-texture.c
+index cdaa0aff284..6cb04a93bab 100644
+--- a/src/compositor/meta-shaped-texture.c
++++ b/src/compositor/meta-shaped-texture.c
+@@ -640,6 +640,7 @@ do_paint_content (MetaShapedTexture   *stex,
+   MetaMultiTexture *paint_tex = stex->texture;
+   CoglFramebuffer *framebuffer;
+   int sample_width, sample_height;
++  int texture_width, texture_height;
+   gboolean debug_paint_opaque_region;
+   int n_planes;
+ 
+@@ -651,6 +652,9 @@ do_paint_content (MetaShapedTexture   *stex,
+   if (dst_width == 0 || dst_height == 0) /* no contents yet */
+     return;
+ 
++  texture_width = meta_multi_texture_get_width (stex->texture);
++  texture_height = meta_multi_texture_get_height (stex->texture);
++
+   content_rect = (MtkRectangle) {
+     .x = 0,
+     .y = 0,
+@@ -676,8 +680,8 @@ do_paint_content (MetaShapedTexture   *stex,
+     }
+   else
+     {
+-      sample_width = meta_multi_texture_get_width (stex->texture);
+-      sample_height = meta_multi_texture_get_height (stex->texture);
++      sample_width = texture_width;
++      sample_height = texture_height;
+     }
+   if (meta_monitor_transform_is_rotated (stex->transform))
+     flip_ints (&sample_width, &sample_height);
+@@ -702,7 +706,9 @@ do_paint_content (MetaShapedTexture   *stex,
+        */
+       if (stex->create_mipmaps &&
+           transforms.x_scale < 0.5 &&
+-          transforms.y_scale < 0.5)
++          transforms.y_scale < 0.5 &&
++          texture_width >= 8 &&
++          texture_height >= 8)
+         {
+           paint_tex = meta_texture_mipmap_get_paint_texture (stex->texture_mipmap);
+           min_filter = COGL_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST;
+-- 
+GitLab
+
+
+From 36c161c274ce35959acc062ea236324ccd29307c Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Fri, 10 Nov 2023 00:28:42 +0100
+Subject: [PATCH 36/40] clutter: Defer repick on transform changes
+
+Avoid an immediate repick, and queue it instead so it happens
+for all devices on the next frame clock step.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3385>
+
+(cherry picked from commit 9f00572762d3bddb0752d46e3a2e76d22e5e63fc)
+---
+ clutter/clutter/clutter-actor.c         | 18 ++++++------------
+ clutter/clutter/clutter-stage-private.h |  2 ++
+ clutter/clutter/clutter-stage.c         |  6 +++---
+ 3 files changed, 11 insertions(+), 15 deletions(-)
+
+diff --git a/clutter/clutter/clutter-actor.c b/clutter/clutter/clutter-actor.c
+index 983acf3faaa..3bd26b8653a 100644
+--- a/clutter/clutter/clutter-actor.c
++++ b/clutter/clutter/clutter-actor.c
+@@ -1006,7 +1006,7 @@ static void push_in_paint_unmapped_branch (ClutterActor *self,
+ static void pop_in_paint_unmapped_branch (ClutterActor *self,
+                                           guint         count);
+ 
+-static void clutter_actor_update_pointer (ClutterActor *self);
++static void clutter_actor_update_devices (ClutterActor *self);
+ 
+ static GQuark quark_actor_layout_info = 0;
+ static GQuark quark_actor_transform_info = 0;
+@@ -2463,7 +2463,7 @@ update_pointer_if_not_animated (ClutterActor *actor)
+ {
+   if (!clutter_actor_has_transitions (actor) &&
+       !CLUTTER_ACTOR_IN_RELAYOUT (actor))
+-    clutter_actor_update_pointer (actor);
++    clutter_actor_update_devices (actor);
+ }
+ 
+ /*< private >
+@@ -12761,19 +12761,13 @@ clutter_actor_set_animatable_property (ClutterActor *actor,
+ }
+ 
+ static void
+-clutter_actor_update_pointer (ClutterActor *self)
++clutter_actor_update_devices (ClutterActor *self)
+ {
+-  ClutterInputDevice *pointer;
+   ClutterStage *stage;
+-  ClutterSeat *seat;
+ 
+   stage = CLUTTER_STAGE (_clutter_actor_get_stage_internal (self));
+-  if (!stage)
+-    return;
+-
+-  seat = clutter_backend_get_default_seat (clutter_get_default_backend ());
+-  pointer = clutter_seat_get_pointer (seat);
+-  clutter_stage_repick_device (stage, pointer);
++  if (stage)
++    clutter_stage_invalidate_devices (stage);
+ }
+ 
+ static void
+@@ -12826,7 +12820,7 @@ clutter_actor_set_final_state (ClutterAnimatable *animatable,
+         }
+     }
+ 
+-  clutter_actor_update_pointer (actor);
++  clutter_actor_update_devices (actor);
+ 
+   g_free (p_name);
+ }
+diff --git a/clutter/clutter/clutter-stage-private.h b/clutter/clutter/clutter-stage-private.h
+index ecc69996f0d..c2460b327c9 100644
+--- a/clutter/clutter/clutter-stage-private.h
++++ b/clutter/clutter/clutter-stage-private.h
+@@ -170,4 +170,6 @@ ClutterGrab * clutter_stage_grab_input_only (ClutterStage        *self,
+                                              gpointer             user_data,
+                                              GDestroyNotify       user_data_destroy);
+ 
++void clutter_stage_invalidate_devices (ClutterStage *stage);
++
+ G_END_DECLS
+diff --git a/clutter/clutter/clutter-stage.c b/clutter/clutter/clutter-stage.c
+index deb383fe216..47405872b34 100644
+--- a/clutter/clutter/clutter-stage.c
++++ b/clutter/clutter/clutter-stage.c
+@@ -846,8 +846,8 @@ clutter_stage_dequeue_actor_relayout (ClutterStage *stage,
+     }
+ }
+ 
+-static void
+-clutter_stage_invalidate_views_devices (ClutterStage *stage)
++void
++clutter_stage_invalidate_devices (ClutterStage *stage)
+ {
+   GList *l;
+ 
+@@ -906,7 +906,7 @@ clutter_stage_maybe_relayout (ClutterActor *actor)
+   CLUTTER_NOTE (ACTOR, "<<< Completed recomputing layout of %d subtrees", count);
+ 
+   if (count)
+-    clutter_stage_invalidate_views_devices (stage);
++    clutter_stage_invalidate_devices (stage);
+ }
+ 
+ GSList *
+-- 
+GitLab
+
+
+From c60bdbb6973f06dc8e50b835c5b80d0c72822e60 Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Fri, 10 Nov 2023 00:33:37 +0100
+Subject: [PATCH 37/40] clutter: Centralize repick handling due to transform
+ changes
+
+Since we just queue up repicks, we can improve the mechanism
+added at commit 4d76a21029 this so it's less ad-hoc.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3385>
+
+(cherry picked from commit 819d62cde208954d90c2179b9fc38638c60e18d9)
+---
+ clutter/clutter/clutter-actor.c | 17 +----------------
+ 1 file changed, 1 insertion(+), 16 deletions(-)
+
+diff --git a/clutter/clutter/clutter-actor.c b/clutter/clutter/clutter-actor.c
+index 3bd26b8653a..dd0d5ceb68d 100644
+--- a/clutter/clutter/clutter-actor.c
++++ b/clutter/clutter/clutter-actor.c
+@@ -2456,11 +2456,7 @@ transform_changed (ClutterActor *actor)
+                            absolute_geometry_changed_cb,
+                            NULL,
+                            NULL);
+-}
+ 
+-static void
+-update_pointer_if_not_animated (ClutterActor *actor)
+-{
+   if (!clutter_actor_has_transitions (actor) &&
+       !CLUTTER_ACTOR_IN_RELAYOUT (actor))
+     clutter_actor_update_devices (actor);
+@@ -4337,7 +4333,6 @@ clutter_actor_set_pivot_point_internal (ClutterActor           *self,
+   info->pivot = *pivot;
+ 
+   transform_changed (self);
+-  update_pointer_if_not_animated (self);
+ 
+   g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_PIVOT_POINT]);
+ 
+@@ -4354,7 +4349,6 @@ clutter_actor_set_pivot_point_z_internal (ClutterActor *self,
+   info->pivot_z = pivot_z;
+ 
+   transform_changed (self);
+-  update_pointer_if_not_animated (self);
+ 
+   g_object_notify_by_pspec (G_OBJECT (self), obj_props[PROP_PIVOT_POINT_Z]);
+ 
+@@ -4389,7 +4383,6 @@ clutter_actor_set_translation_internal (ClutterActor *self,
+     g_assert_not_reached ();
+ 
+   transform_changed (self);
+-  update_pointer_if_not_animated (self);
+ 
+   clutter_actor_queue_redraw (self);
+   g_object_notify_by_pspec (obj, pspec);
+@@ -4519,7 +4512,6 @@ clutter_actor_set_rotation_angle_internal (ClutterActor *self,
+     g_assert_not_reached ();
+ 
+   transform_changed (self);
+-  update_pointer_if_not_animated (self);
+ 
+   clutter_actor_queue_redraw (self);
+ 
+@@ -4641,7 +4633,6 @@ clutter_actor_set_scale_factor_internal (ClutterActor *self,
+     g_assert_not_reached ();
+ 
+   transform_changed (self);
+-  update_pointer_if_not_animated (self);
+ 
+   clutter_actor_queue_redraw (self);
+   g_object_notify_by_pspec (obj, pspec);
+@@ -10444,7 +10435,6 @@ clutter_actor_set_z_position_internal (ClutterActor *self,
+       info->z_position = z_position;
+ 
+       transform_changed (self);
+-      update_pointer_if_not_animated (self);
+ 
+       clutter_actor_queue_redraw (self);
+ 
+@@ -13876,7 +13866,6 @@ clutter_actor_set_transform_internal (ClutterActor            *self,
+   info->transform_set = !graphene_matrix_is_identity (&info->transform);
+ 
+   transform_changed (self);
+-  update_pointer_if_not_animated (self);
+ 
+   clutter_actor_queue_redraw (self);
+ 
+@@ -19025,7 +19014,6 @@ clutter_actor_invalidate_transform (ClutterActor *self)
+   g_return_if_fail (CLUTTER_IS_ACTOR (self));
+ 
+   transform_changed (self);
+-  update_pointer_if_not_animated (self);
+ }
+ 
+ /**
+@@ -19157,8 +19145,5 @@ clutter_actor_notify_transform_invalid (ClutterActor *self)
+   g_assert (priv->transform_valid);
+ 
+   if (!graphene_matrix_equal (&old_transform, &priv->transform))
+-    {
+-      update_pointer_if_not_animated (self);
+-      clutter_actor_queue_redraw (self);
+-    }
++    clutter_actor_queue_redraw (self);
+ }
+-- 
+GitLab
+
+
+From e41ce4a6e7f3cdc17e3ff935c56918f759956397 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Florian=20M=C3=BCllner?= <fmuellner@gnome.org>
+Date: Fri, 29 Sep 2023 13:34:54 +0200
+Subject: [PATCH 38/40] window: Handle layer of DESKTOP windows
+
+Assigning the corresponding stack layer of DESKTOP windows is
+currently X11 specific, because there is no way for wayland
+clients to set the DESKTOP window type.
+
+This is about to change, so move the code to the generic layer
+handling.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3305>
+
+(cherry picked from commit b9008ee83d520c235335209aa23a9ad502cb8460)
+---
+ src/core/window.c    | 2 ++
+ src/x11/window-x11.c | 4 ----
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/src/core/window.c b/src/core/window.c
+index 7fe0b8c7973..9be783866fc 100644
+--- a/src/core/window.c
++++ b/src/core/window.c
+@@ -6136,6 +6136,8 @@ meta_window_get_default_layer (MetaWindow *window)
+     return META_LAYER_BOTTOM;
+   else if (window->wm_state_above && !META_WINDOW_MAXIMIZED (window))
+     return META_LAYER_TOP;
++  else if (window->type == META_WINDOW_DESKTOP)
++    return META_LAYER_DESKTOP;
+   else
+     return META_LAYER_NORMAL;
+ }
+diff --git a/src/x11/window-x11.c b/src/x11/window-x11.c
+index 7ae5d8059bc..5243655ab9a 100644
+--- a/src/x11/window-x11.c
++++ b/src/x11/window-x11.c
+@@ -1920,10 +1920,6 @@ get_standalone_layer (MetaWindow *window)
+ 
+   switch (window->type)
+     {
+-    case META_WINDOW_DESKTOP:
+-      layer = META_LAYER_DESKTOP;
+-      break;
+-
+     case META_WINDOW_DOCK:
+       if (window->wm_state_below ||
+           (window->monitor && window->monitor->in_fullscreen))
+-- 
+GitLab
+
+
+From 5b34286c8e95c5304c1e4d0cb89bff1c10eeacbe Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Florian=20M=C3=BCllner?= <fmuellner@gnome.org>
+Date: Mon, 9 Oct 2023 20:25:50 +0200
+Subject: [PATCH 39/40] window: Consider stickiness changes on feature recalc
+
+Some properties like the window type can affect the stickiness.
+Make sure workspaces are updated in that case to pick up the
+change.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3305>
+
+(cherry picked from commit 6a22b52579e7737e1c9e964077d03f0bb3674422)
+---
+ src/core/window.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/core/window.c b/src/core/window.c
+index 9be783866fc..ea9174e7732 100644
+--- a/src/core/window.c
++++ b/src/core/window.c
+@@ -5686,6 +5686,9 @@ meta_window_recalc_features (MetaWindow *window)
+   if (old_skip_taskbar != window->skip_taskbar)
+     g_object_notify_by_pspec (G_OBJECT (window), obj_props[PROP_SKIP_TASKBAR]);
+ 
++  if (old_always_sticky != window->always_sticky)
++    meta_window_on_all_workspaces_changed (window);
++
+   /* FIXME:
+    * Lame workaround for recalc_features being used overzealously.
+    * The fix is to only recalc_features when something has
+-- 
+GitLab
+
+
+From 5f777c90b79a8c49e1bfdb84ea2efb7907ebb963 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Florian=20M=C3=BCllner?= <fmuellner@gnome.org>
+Date: Fri, 29 Sep 2023 13:04:49 +0200
+Subject: [PATCH 40/40] wayland/client: Add make_desktop() method
+
+There are existing extensions that implement desktop icons as
+a combination of a GTK program and a small extension to make
+the wayland window behave as if it was of type DESKTOP on X11.
+
+That's quite painful, as it requires reimplementing WM behavior
+that is already implemented in mutter itself (stacking, stickiness,
+skip-taskbar, ...), as well as modifying gnome-shell to consider
+the window in addition to "real" DESKTOP windows (workspace-switch
+animations, ctrl-alt-tab, ...).
+
+In addition to that, other extensions may also have special handling
+of DESKTOP windows, and their code cannot easily be monkey-patched
+to handle "alternative" desktop icons.
+
+This whole game of whack-a-mole can easily be avoided by allowing
+desktop-icons extensions to mark their desktop windows as DESKTOP,
+so do just that.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3305>
+
+(cherry picked from commit 13d9edc687b81bfb0f51543864a1e551a865628d)
+---
+ src/meta/meta-wayland-client.h    |  4 ++++
+ src/wayland/meta-wayland-client.c | 21 +++++++++++++++++++++
+ 2 files changed, 25 insertions(+)
+
+diff --git a/src/meta/meta-wayland-client.h b/src/meta/meta-wayland-client.h
+index b32995bf998..c5f0c837649 100644
+--- a/src/meta/meta-wayland-client.h
++++ b/src/meta/meta-wayland-client.h
+@@ -60,5 +60,9 @@ META_EXPORT
+ void meta_wayland_client_show_in_window_list (MetaWaylandClient *client,
+                                               MetaWindow        *window);
+ 
++META_EXPORT
++void meta_wayland_client_make_desktop (MetaWaylandClient *client,
++                                       MetaWindow        *window);
++
+ G_END_DECLS
+ 
+diff --git a/src/wayland/meta-wayland-client.c b/src/wayland/meta-wayland-client.c
+index 8e8b9b0b370..351f13e75f5 100644
+--- a/src/wayland/meta-wayland-client.c
++++ b/src/wayland/meta-wayland-client.c
+@@ -474,6 +474,27 @@ meta_wayland_client_show_in_window_list (MetaWaylandClient *client,
+     }
+ }
+ 
++/**
++ * meta_wayland_client_make_desktop
++ * @client: a #MetaWaylandClient
++ * @window: (not nullable): a MetaWindow
++ *
++ * Mark window as DESKTOP window
++ */
++void
++meta_wayland_client_make_desktop (MetaWaylandClient *client,
++                                  MetaWindow        *window)
++{
++  g_return_if_fail (META_IS_WAYLAND_CLIENT (client));
++  g_return_if_fail (META_IS_WINDOW (window));
++  g_return_if_fail (window->type == META_WINDOW_NORMAL);
++
++  if (!meta_wayland_client_owns_window (client, window))
++    return;
++
++  meta_window_set_type (window, META_WINDOW_DESKTOP);
++}
++
+ gboolean
+ meta_wayland_client_matches (MetaWaylandClient      *client,
+                              const struct wl_client *wayland_client)
 -- 
 GitLab
 
