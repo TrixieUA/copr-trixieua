@@ -16,8 +16,8 @@
 %global toolchain clang
 
 Name:          mutter
-Version:       45.2
-Release:       15%{?dist}.tripplebuffer
+Version:       45.3
+Release:       10%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -51,7 +51,7 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 
 # backports for 45.3
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3457
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3457.patch
+#Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3457.patch
 
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter_increase_check_alive_timeout.patch
 
