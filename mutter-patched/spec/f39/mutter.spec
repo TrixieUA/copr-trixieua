@@ -49,10 +49,6 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3296
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3296.patch
 
-# backports for 45.3
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3457
-#Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3457.patch
-
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter_increase_check_alive_timeout.patch
 
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/autorotate.patch
