@@ -3,7 +3,7 @@
 
 %global majorversion 1
 %global minorversion 0
-%global microversion 0
+%global microversion 1
 
 %global apiversion   0.3
 %global spaversion   0.2
@@ -69,7 +69,7 @@
 Name:           pipewire
 Summary:        Media Sharing Server
 Version:        %{majorversion}.%{minorversion}.%{microversion}
-Release:        11%{?dist}.clang
+Release:        10%{?dist}.clang
 License:        MIT
 URL:            https://pipewire.org/
 %if 0%{?snapdate}
