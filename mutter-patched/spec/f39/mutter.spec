@@ -17,7 +17,7 @@
 
 Name:          mutter
 Version:       45.3
-Release:       10%{?dist}.tripplebuffer
+Release:       11%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -40,6 +40,14 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837	
 # which solves the problems reported with #3329 alone
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-modified-3329.patch
+
+# Nvidia secondary GPU copy acceleration
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3304
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3304.patch
+
+# kms/crtc: Increase default deadline evasion to 1000 microseconds 
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3373
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3373.patch
 
 # Draft: Dynamic triple/double buffering (v4) 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
