@@ -6,7 +6,7 @@
 
 Summary:   Xwayland
 Name:      xorg-x11-server-Xwayland
-Version:   23.2.3
+Version:   23.2.4
 Release:   10%{?dist}.clang
 
 URL:       http://www.x.org
