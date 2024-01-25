@@ -74,12 +74,12 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
-Source1: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f40/Mesa-MLAA-License-Clarification-Email.txt
+Source1: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f40/Mesa-MLAA-License-Clarification-Email.txt
 
-Patch10: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f40/gnome-shell-glthread-disable.patch
+Patch10: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f40/gnome-shell-glthread-disable.patch
 
-Workaround for llvm/clang bug: https://github.com/llvm/llvm-project/issues/78691
-Patch11:        https://raw.githubusercontent.com/TrixieUA/mesa-clang/f40/gallium-Undef-__arm_streaming-macro-to-workaround-cl.patch 
+# Workaround for llvm/clang bug: https://github.com/llvm/llvm-project/issues/78691
+Patch11:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f40/gallium-Undef-__arm_streaming-macro-to-workaround-cl.patch 
 
 BuildRequires:  meson >= 1.2.0
 BuildRequires:  gcc
