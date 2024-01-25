@@ -64,7 +64,8 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-Version:        23.3.3
+%global ver 24.0.0-rc3
+Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        10%{?dist}.clang
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
 URL:            https://www.mesa3d.org
@@ -76,6 +77,9 @@ Source0:        https://archive.mesa3d.org/mesa-%{version}.tar.xz
 Source1: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f39/Mesa-MLAA-License-Clarification-Email.txt
 
 Patch10: https://raw.githubusercontent.com/TrixieUA/mesa-clang/f39/gnome-shell-glthread-disable.patch
+
+Workaround for llvm/clang bug: https://github.com/llvm/llvm-project/issues/78691
+Patch11:        gallium-Undef-__arm_streaming-macro-to-workaround-cl.patch 
 
 BuildRequires:  meson >= 1.2.0
 BuildRequires:  gcc
