@@ -17,7 +17,7 @@
 
 Name:          mutter
 Version:       45.3
-Release:       11%{?dist}.tripplebuffer
+Release:       12%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -56,6 +56,11 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 # backends/native: Main thread rt-scheduler: experimental feature no more 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3296
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3296.patch
+
+# wayland: Restore IM state flushing before handling key events
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3536
+
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/3536.patch
 
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f38/mutter/mutter_increase_check_alive_timeout.patch
 
