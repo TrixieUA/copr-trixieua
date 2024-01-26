@@ -1,0 +1,64 @@
+From befb4854e5139967f61ca998f99bc541aa87fd03 Mon Sep 17 00:00:00 2001
+From: Carlos Garnacho <carlosg@gnome.org>
+Date: Fri, 19 Jan 2024 20:04:28 +0100
+Subject: [PATCH] wayland: Restore IM state flushing before handling key events
+
+The code that maybe flushed IM state before processing a key event
+became ineffective at commit 7716b62fa2, since the handle_event()
+method on MetaWaylandTextInput won't handle key events, only IM
+events and touch/button press events causing IM state to be
+committed. Basically, the events that directly change the IM state.
+
+Move this ineffective code to the the filter_event() method handling
+the key presses in order to let the IM maybe filter them, and handle
+them so that any key event that is let through (both key events
+previously injected by the IM, and key events that the IM chooses to
+ignore) will ensure that the pending IM state is flushed before the
+key event is handled and emitted to the client.
+
+This brings back lost guarantees of orderly event emission when IMs
+alternate key events and IM actions.
+
+Fixes: 7716b62fa2 ("clutter: Separate ClutterInputFocus event processing and filtering")
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/3090
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3536>
+---
+ src/wayland/meta-wayland-text-input.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/src/wayland/meta-wayland-text-input.c b/src/wayland/meta-wayland-text-input.c
+index c8f50847a88..04ee51dbaa5 100644
+--- a/src/wayland/meta-wayland-text-input.c
++++ b/src/wayland/meta-wayland-text-input.c
+@@ -875,7 +875,15 @@ meta_wayland_text_input_update (MetaWaylandTextInput *text_input,
+ 
+   if (event_type == CLUTTER_KEY_PRESS ||
+       event_type == CLUTTER_KEY_RELEASE)
+-    return clutter_input_focus_filter_event (text_input->input_focus, event);
++    {
++      gboolean filtered = FALSE;
++
++      filtered = clutter_input_focus_filter_event (text_input->input_focus, event);
++      if (!filtered)
++        meta_wayland_text_input_focus_flush_done (text_input->input_focus);
++
++      return filtered;
++    }
+ 
+   return FALSE;
+ }
+@@ -893,11 +901,6 @@ meta_wayland_text_input_handle_event (MetaWaylandTextInput *text_input,
+ 
+   event_type = clutter_event_type (event);
+ 
+-  if ((event_type == CLUTTER_KEY_PRESS ||
+-       event_type == CLUTTER_KEY_RELEASE) &&
+-      clutter_event_get_flags (event) & CLUTTER_EVENT_FLAG_INPUT_METHOD)
+-    meta_wayland_text_input_focus_flush_done (text_input->input_focus);
+-
+   retval = clutter_input_focus_process_event (text_input->input_focus, event);
+ 
+   if (event_type == CLUTTER_BUTTON_PRESS ||
+-- 
+GitLab
+
