@@ -79,6 +79,9 @@ Source0:        https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/%{ver
 %endif
 Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/pipewire-clang/pipewire.sysusers
 
+Patch0: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/pipewire-clang/0001-Revert-spa-libcamera-bump-minimum-supported-version-.patch 
+Patch1: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/pipewire-clang/0002-Revert-spa-libcamera-use-CameraConfiguration-orienta.patch 
+
 ## upstream patches
 
 ## upstreamable patches
