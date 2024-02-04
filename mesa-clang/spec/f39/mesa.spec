@@ -407,6 +407,7 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dgallium-xa=%{?with_xa:enabled}%{!?with_xa:disabled} \
   -Dgallium-nine=%{?with_nine:true}%{!?with_nine:false} \
   -Dgallium-opencl=%{?with_opencl:icd}%{!?with_opencl:disabled} \
+  -Dvideo-codecs=h264dec,h264enc,h265dec,h265enc,vc1dec \
 %if 0%{?with_opencl}
   -Dgallium-rusticl=true \
 %endif
