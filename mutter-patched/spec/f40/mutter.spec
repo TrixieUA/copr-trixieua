@@ -10,7 +10,7 @@
 %global libei_version 1.0.0
 %global mutter_api_version 14
 
-%global tarball_version %%(echo %{version} | tr '~' '.')
+%global tarball_version 46.beta
 %global toolchain clang
 
 Name:          mutter
@@ -20,7 +20,7 @@ Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
 URL:           http://www.gnome.org
-Source0:       http://download.gnome.org/sources/%{name}/45/%{name}-%{tarball_version}.tar.xz
+Source0:       http://download.gnome.org/sources/%{name}/46/%{name}-%{tarball_version}.tar.xz
 
 # Work-around for OpenJDK's compliance test
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch

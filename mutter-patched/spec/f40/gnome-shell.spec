@@ -1,5 +1,5 @@
-%global tarball_version %%(echo %{version} | tr '~' '.')
-%global major_version %%(cut -d "." -f 1 <<<%{tarball_version})
+%global tarball_version 46.beta
+%global major_version 46
 %global toolchain clang
 
 Name:           gnome-shell
