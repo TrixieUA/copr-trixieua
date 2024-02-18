@@ -43,6 +43,7 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 
 BuildRequires:  pkgconfig(bash-completion)
 BuildRequires:  gcc
+BuildRequires:  clang
 BuildRequires:  meson
 BuildRequires:  git
 BuildRequires:  pkgconfig(ibus-1.0) >= %{ibus_version}
