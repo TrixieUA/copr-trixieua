@@ -11,7 +11,7 @@
 %global mutter_api_version 14
 
 %global tarball_version 46.beta
-%global toolchain clang
+#%global toolchain clang
 
 Name:          mutter
 Version:       46~beta
@@ -30,12 +30,6 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 
 # https://pagure.io/fedora-workstation/issue/79
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
-
-# https://bugzilla.redhat.com/show_bug.cgi?id=2239128
-# https://gitlab.gnome.org/GNOME/mutter/-/issues/3068
-# not upstreamed because for upstream we'd really want to find a way
-# to fix *both* problems
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329
 # Modified to add the change from
