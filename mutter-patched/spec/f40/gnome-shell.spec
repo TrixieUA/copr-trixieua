@@ -1,24 +1,29 @@
 %global tarball_version %%(echo %{version} | tr '~' '.')
+%global major_version %%(cut -d "." -f 1 <<<%{tarball_version})
 %global toolchain clang
-%define _disable_source_fetch 0
 
 Name:           gnome-shell
-Version:        46~alpha
-Release:        10%{?dist}.clang
+Version:        46~beta
+Release:        10.clang%{?dist}
 Summary:        Window management and application launching for GNOME
 
-License:        GPLv2+
+License:        GPL-2.0-or-later
 URL:            https://wiki.gnome.org/Projects/GnomeShell
-Source0:        https://download.gnome.org/sources/gnome-shell/46/%{name}-%{tarball_version}.tar.xz
+Source0:        https://download.gnome.org/sources/gnome-shell/%{major_version}/%{name}-%{tarball_version}.tar.xz
 
 # Replace Epiphany with Firefox in the default favourite apps list
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/gnome-shell-favourite-apps-firefox.patch
+Patch:  https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/gnome-shell-favourite-apps-firefox.patch
+
+# No portal helper if WebKitGTK is not installed
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/optional-portal-helper.patch
 
 # Some users might have a broken PAM config, so we really need this
 # downstream patch to stop trying on configuration errors.
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/0001-gdm-Work-around-failing-fingerprint-auth.patch
 
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/0001-status-keyboard-Add-a-catch-around-reload-call.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/0002-status-keyboard-Load-keyboard-from-system-settings-i.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/0003-status-keyboard-Use-gnome-desktop-API-for-getting-de.patch
 
 %define eds_version 3.45.1
 %define gnome_desktop_version 44.0-7
@@ -27,16 +32,16 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 %define gjs_version 1.73.1
 %define gtk4_version 4.0.0
 %define adwaita_version 1.0.0
-%define mutter_version 45.0
+%define mutter_version 46~beta
 %define polkit_version 0.100
-%define gsettings_desktop_schemas_version 42~beta
+%define gsettings_desktop_schemas_version 46~beta
 %define ibus_version 1.5.2
 %define gnome_bluetooth_version 1:42.3
 %define gstreamer_version 1.4.5
 %define pipewire_version 0.3.0
 %define gnome_settings_daemon_version 3.37.1
 
-BuildRequires:  bash-completion
+BuildRequires:  pkgconfig(bash-completion)
 BuildRequires:  gcc
 BuildRequires:  meson
 BuildRequires:  git
@@ -61,9 +66,6 @@ BuildRequires:  pkgconfig(libpipewire-0.3) >= %{pipewire_version}
 BuildRequires:  pkgconfig(gtk4) >= %{gtk4_version}
 BuildRequires:  gettext >= 0.19.6
 BuildRequires:  python3
-BuildRequires:  clang
-BuildRequires:  llvm
-BuildRequires:  lld
 
 # for barriers
 BuildRequires:  libXfixes-devel >= 5.0
@@ -122,14 +124,26 @@ Requires:       switcheroo-control
 # needed for clocks/weather integration
 Requires:       geoclue2-libs%{?_isa}
 Requires:       libgweather4%{?_isa}
+# for gnome-extensions CLI tool
+Requires:  gettext
 # needed for thunderbolt support
-Requires:       bolt%{?_isa}
+Recommends:     bolt%{?_isa}
 # Needed for launching flatpak apps etc
 # 1.8.0 is needed for source type support in the screencast portal.
 Requires:       xdg-desktop-portal-gtk >= 1.8.0
 Requires:       xdg-desktop-portal-gnome
 # needed by the welcome dialog
 Recommends:     gnome-tour
+
+%if !0%{?rhel}
+# needed for captive portal helper
+Recommends:     webkitgtk6.0%{?_isa}
+%endif
+
+# https://github.com/containers/composefs/pull/229#issuecomment-1838735764
+%if 0%{?rhel} >= 10
+ExcludeArch:    %{ix86}
+%endif
 
 Provides:       desktop-notification-daemon = %{version}-%{release}
 Provides:       PolicyKit-authentication-agent = %{version}-%{release}
@@ -162,7 +176,7 @@ easy to use experience.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-%meson -Dextensions_app=false --buildtype=release
+%meson -Dextensions_app=false
 %meson_build
 
 %install
@@ -181,7 +195,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Porta
 
 %files -f %{name}.lang
 %license COPYING
-%doc README.md
+%doc NEWS README.md
 %{_bindir}/gnome-shell
 %{_bindir}/gnome-extensions
 %{_bindir}/gnome-shell-extension-prefs
@@ -217,10 +231,6 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Porta
 %{_userunitdir}/org.gnome.Shell.target
 %{_userunitdir}/org.gnome.Shell@wayland.service
 %{_userunitdir}/org.gnome.Shell@x11.service
-# Co own directory instead of pulling in xdg-desktop-portal - we
-# are providing a backend to the portal, not depending on it
-%dir %{_datadir}/xdg-desktop-portal/portals/
-%{_datadir}/xdg-desktop-portal/portals/gnome-shell.portal
 %{_libdir}/gnome-shell/
 %{_libexecdir}/gnome-shell-calendar-server
 %{_libexecdir}/gnome-shell-perf-helper
@@ -228,6 +238,3 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Porta
 %{_libexecdir}/gnome-shell-portal-helper
 %{_mandir}/man1/gnome-extensions.1*
 %{_mandir}/man1/gnome-shell.1*
-
-%changelog
-%autochangelog

@@ -1,5 +1,3 @@
-%define _disable_source_fetch 0
-
 %global glib_version 2.75.1
 %global gtk3_version 3.19.8
 %global gtk4_version 4.0.0
@@ -16,45 +14,42 @@
 %global toolchain clang
 
 Name:          mutter
-Version:       46~alpha
-Release:       10%{?dist}.tripplebuffer
+Version:       46~beta
+Release:       10.triplebuffer%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
-URL:           https://www.gnome.org
-Source0:       https://download.gnome.org/sources/%{name}/46/%{name}-%{tarball_version}.tar.xz
+URL:           http://www.gnome.org
+Source0:       http://download.gnome.org/sources/%{name}/45/%{name}-%{tarball_version}.tar.xz
 
 # Work-around for OpenJDK's compliance test
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/mutter-42.alpha-disable-tegra.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/mutter-42.alpha-disable-tegra.patch
 
 # https://pagure.io/fedora-workstation/issue/79
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
 
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=2239128
+# https://gitlab.gnome.org/GNOME/mutter/-/issues/3068
+# not upstreamed because for upstream we'd really want to find a way
+# to fix *both* problems
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
 
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329	
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329
 # Modified to add the change from
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837	
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837
 # which solves the problems reported with #3329 alone
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/0001-modified-3329.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/0001-modified-3329.patch
 
-# Draft: Dynamic triple/double buffering (v4) 
+# Dynamic triple/double buffering (v4) 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/1441.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f39/mutter/1441.patch
 
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/fix-i686-build.patch
-
-# backends/native: Main thread rt-scheduler: experimental feature no more 
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3296
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/3296.patch
-
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/mutter_increase_check_alive_timeout.patch
-
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/autorotate.patch
-
+BuildRequires: clang
+BuildRequires: llvm
+BuildRequires: lld
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.41.0
 BuildRequires: pkgconfig(sm)
 BuildRequires: pkgconfig(libwacom)
@@ -109,7 +104,6 @@ BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
 BuildRequires: pkgconfig(json-glib-1.0) >= %{json_glib_version}
 BuildRequires: pkgconfig(libinput) >= %{libinput_version}
 BuildRequires: pkgconfig(xwayland)
-BuildRequires: clang
 
 Requires: control-center-filesystem
 Requires: gsettings-desktop-schemas%{?_isa} >= %{gsettings_desktop_schemas_version}
@@ -183,9 +177,6 @@ the functionality of the installed %{name} package.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-export CFLAGS="%{optflags} -O3 -flto=thin"
-export CXXFLAGS="%{optflags} -O3 -flto=thin"
-export LDFLAGS="%{optflags} -O3"
 %meson -Degl_device=true -Dwayland_eglstream=true
 %meson_build
 
