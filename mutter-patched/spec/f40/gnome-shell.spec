@@ -1,9 +1,11 @@
-%global tarball_version 46.beta
+%global tarball_version 46.rc
 %global major_version 46
+%define _disable_source_fetch 0
 %global toolchain clang
 
+
 Name:           gnome-shell
-Version:        46~beta
+Version:        46~rc
 Release:        10.clang%{?dist}
 Summary:        Window management and application launching for GNOME
 
@@ -20,10 +22,6 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 # Some users might have a broken PAM config, so we really need this
 # downstream patch to stop trying on configuration errors.
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/0001-gdm-Work-around-failing-fingerprint-auth.patch
-
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/0001-status-keyboard-Add-a-catch-around-reload-call.patch
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/0002-status-keyboard-Load-keyboard-from-system-settings-i.patch
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/0003-status-keyboard-Use-gnome-desktop-API-for-getting-de.patch
 
 %define eds_version 3.45.1
 %define gnome_desktop_version 44.0-7
