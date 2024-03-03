@@ -5,17 +5,17 @@
 
 %define gtk3_version 2.99.2
 
-%global tarball_version %%(echo %{version} | tr '~' '.')
+%global tarball_version 46.rc
 
 Name:           gdm
 Epoch:          1
-Version:        45.0.1
-Release:        11%{?dist}.clang
+Version:        46.rc
+Release:        10%{?dist}.clang
 Summary:        The GNOME Display Manager
 
 License:        GPL-2.0-or-later
 URL:            https://wiki.gnome.org/Projects/GDM
-Source0:        https://download.gnome.org/sources/gdm/45/gdm-%{tarball_version}.tar.xz
+Source0:        https://download.gnome.org/sources/gdm/46/gdm-%{tarball_version}.tar.xz
 Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gdm/org.gnome.login-screen.gschema.override
 
 # moved here from pulseaudio-gdm-hooks-11.1-16
@@ -58,6 +58,7 @@ BuildRequires:  which
 BuildRequires:  xorg-x11-server-Xorg
 BuildRequires:  yelp-devel
 BuildRequires:  yelp-tools
+BuildRequires:  json-glib-devel
 
 Provides: service(graphical-login) = %{name}
 
@@ -252,6 +253,7 @@ fi
 %{_libexecdir}/gdm-x-session
 %{_sbindir}/gdm
 %{_bindir}/gdmflexiserver
+%{_bindir}/gdm-config
 %{_bindir}/gdm-screenshot
 %dir %{_datadir}/dconf
 %dir %{_datadir}/dconf/profile
@@ -268,6 +270,7 @@ fi
 %{_libdir}/girepository-1.0/Gdm-1.0.typelib
 %{_libdir}/security/pam_gdm.so
 %{_libdir}/libgdm*.so*
+%{_libexecdir}/gdm-auth-config-redhat
 %attr(0711, root, gdm) %dir %{_localstatedir}/log/gdm
 %attr(1770, gdm, gdm) %dir %{_localstatedir}/lib/gdm
 %attr(0700, gdm, gdm) %dir %{_localstatedir}/lib/gdm/.config
@@ -287,10 +290,16 @@ fi
 %dir %{_includedir}/gdm
 %{_includedir}/gdm/*.h
 %exclude %{_includedir}/gdm/gdm-pam-extensions.h
+%exclude %{_includedir}/gdm/gdm-choice-list-pam-extension.h
+%exclude %{_includedir}/gdm/gdm-custom-json-pam-extension.h
+%exclude %{_includedir}/gdm/gdm-pam-extensions-common.h
 %dir %{_datadir}/gir-1.0
 %{_datadir}/gir-1.0/Gdm-1.0.gir
 %{_libdir}/pkgconfig/gdm.pc
 
 %files pam-extensions-devel
 %{_includedir}/gdm/gdm-pam-extensions.h
+%{_includedir}/gdm/gdm-choice-list-pam-extension.h
+%{_includedir}/gdm/gdm-custom-json-pam-extension.h
+%{_includedir}/gdm/gdm-pam-extensions-common.h
 %{_libdir}/pkgconfig/gdm-pam-extensions.pc
