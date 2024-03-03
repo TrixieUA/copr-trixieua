@@ -10,12 +10,13 @@
 %global libei_version 1.0.0
 %global mutter_api_version 14
 
-%global tarball_version 46.beta
-#%global toolchain clang
+%define _disable_source_fetch 0
+
+%global tarball_version 46.rc
 
 Name:          mutter
-Version:       46~beta
-Release:       10.triplebuffer%{?dist}
+Version:       46~rc
+Release:       10.patched%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -39,7 +40,8 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 
 # Dynamic triple/double buffering (v4) 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/1441.patch
+# Doesnt work for now due to VRR being merged
+#Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/1441.patch
 
 BuildRequires: clang
 BuildRequires: llvm
@@ -171,7 +173,7 @@ the functionality of the installed %{name} package.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-%meson -Degl_device=true -Dwayland_eglstream=true
+%meson -Degl_device=true -Dwayland_eglstream=true -Dlibdisplay_info=disabled
 %meson_build
 
 %install
