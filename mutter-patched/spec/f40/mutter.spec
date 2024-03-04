@@ -43,6 +43,10 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 # Doesnt work for now due to VRR being merged
 #Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/1441.patch
 
+# clutter/frame-clock: Use timerfd for clock timing 
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3636
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/3636.patch
+
 BuildRequires: clang
 BuildRequires: llvm
 BuildRequires: lld
