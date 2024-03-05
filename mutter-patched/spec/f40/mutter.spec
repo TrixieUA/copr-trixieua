@@ -16,7 +16,7 @@
 
 Name:          mutter
 Version:       46~rc
-Release:       10.patched%{?dist}
+Release:       11.patched%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -40,8 +40,7 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 
 # Dynamic triple/double buffering (v4) 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
-# Doesnt work for now due to VRR being merged
-#Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/1441.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/1441.patch
 
 # clutter/frame-clock: Use timerfd for clock timing 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3636
