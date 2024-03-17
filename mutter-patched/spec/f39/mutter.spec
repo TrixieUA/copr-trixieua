@@ -16,7 +16,7 @@
 %global toolchain clang
 
 Name:          mutter
-Version:       45.4
+Version:       45.5
 Release:       10%{?dist}.tripplebuffer
 Summary:       Window and compositing manager based on Clutter
 
