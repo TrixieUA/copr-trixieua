@@ -1,11 +1,11 @@
-%global tarball_version 46.rc
+%global tarball_version %{version}
 %global major_version 46
 %define _disable_source_fetch 0
 %global toolchain clang
 
 
 Name:           gnome-shell
-Version:        46~rc
+Version:        46.0
 Release:        10.clang%{?dist}
 Summary:        Window management and application launching for GNOME
 

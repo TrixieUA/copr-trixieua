@@ -12,11 +12,11 @@
 
 %define _disable_source_fetch 0
 
-%global tarball_version 46.rc
+%global tarball_version %{version}
 
 Name:          mutter
-Version:       46~rc
-Release:       12.patched%{?dist}
+Version:       46.0
+Release:       10.patched%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
@@ -42,9 +42,6 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/1441.patch
 
-# clutter/frame-clock: Use timerfd for clock timing 
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3636
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/3636.patch
 
 BuildRequires: clang
 BuildRequires: llvm
@@ -99,6 +96,8 @@ BuildRequires: pkgconfig(lcms2) >= %{lcms2_version}
 BuildRequires: pkgconfig(colord) >= %{colord_version}
 BuildRequires: pkgconfig(libei-1.0) >= %{libei_version}
 BuildRequires: pkgconfig(libeis-1.0) >= %{libei_version}
+
+BuildRequires: python3-dbusmock
 
 BuildRequires: pkgconfig(json-glib-1.0) >= %{json_glib_version}
 BuildRequires: pkgconfig(libinput) >= %{libinput_version}
