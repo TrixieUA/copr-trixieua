@@ -5,11 +5,11 @@
 
 %define gtk3_version 2.99.2
 
-%global tarball_version 46.rc
+%global tarball_version %{version}
 
 Name:           gdm
 Epoch:          1
-Version:        46.rc
+Version:        46.0
 Release:        10%{?dist}.clang
 Summary:        The GNOME Display Manager
 
