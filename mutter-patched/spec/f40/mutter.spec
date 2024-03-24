@@ -9,7 +9,7 @@
 %global colord_version 1.4.5
 %global libei_version 1.0.0
 %global mutter_api_version 14
-
+%global toolchain clang
 %define _disable_source_fetch 0
 
 %global tarball_version %{version}
