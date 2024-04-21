@@ -5,8 +5,8 @@
 
 
 Name:           gnome-shell
-Version:        46.0
-Release:        11.clang%{?dist}
+Version:        46.1
+Release:        10.clang%{?dist}
 Summary:        Window management and application launching for GNOME
 
 License:        GPL-2.0-or-later
