@@ -1,28 +1,34 @@
-%define _disable_source_fetch 0
-%global toolchain clang
-%global pkgname xwayland
-%global toolchain clang
+%global commit 9a55c402aa803fb10e39ab4fd18a709d0cd06fd4
+%global shortcommit %(c=%{commit}; echo ${c:0:7})
+
+#global gitdate 20230426
+%global pkgname %{?gitdate:xserver}%{!?gitdate:xwayland}
 
 %global default_font_path "catalogue:/etc/X11/fontpath.d,built-ins"
 
+%global toolchain clang
+
 Summary:   Xwayland
 Name:      xorg-x11-server-Xwayland
-Version:   23.2.6
-Release:   10%{?dist}.clang
+Version:   24.1.0
+Release:   10.clang%{?dist}
 
 URL:       http://www.x.org
+%if 0%{?gitdate}
+Source0:   https://gitlab.freedesktop.org/xorg/%{pkgname}/-/archive/%{commit}/%{pkgname}-%{shortcommit}.tar.gz
+%else
 Source0:   https://www.x.org/pub/individual/xserver/%{pkgname}-%{version}.tar.xz
+%endif
 
 License:   MIT
 
-Requires: xorg-x11-server-common
+Requires: xkeyboard-config
+Requires: xkbcomp
 Requires: libEGL
 Requires: libepoxy >= 1.5.5
 
 BuildRequires: gcc
 BuildRequires: clang
-BuildRequires: llvm
-BuildRequires: lld
 BuildRequires: git-core
 BuildRequires: meson
 
@@ -30,7 +36,7 @@ BuildRequires: wayland-devel
 BuildRequires: desktop-file-utils
 
 BuildRequires: pkgconfig(wayland-client) >= 1.21.0
-BuildRequires: pkgconfig(wayland-protocols) >= 1.30
+BuildRequires: pkgconfig(wayland-protocols) >= 1.34
 BuildRequires: pkgconfig(wayland-eglstream-protocols)
 
 BuildRequires: pkgconfig(epoxy) >= 1.5.5
@@ -61,7 +67,7 @@ BuildRequires: pkgconfig(libxcvt)
 BuildRequires: pkgconfig(libdecor-0) >= 0.1.1
 BuildRequires: pkgconfig(liboeffis-1.0) >= 1.0.0
 BuildRequires: pkgconfig(libei-1.0) >= 1.0.0
-BuildRequires: xorg-x11-proto-devel >= 2023.2-1
+BuildRequires: xorg-x11-proto-devel >= 2024.1-1
 
 BuildRequires: mesa-libGL-devel >= 9.2
 BuildRequires: mesa-libEGL-devel
@@ -96,15 +102,15 @@ The development package provides the developmental files which are
 necessary for developing Wayland compositors using Xwayland.
 
 %prep
-%autosetup -S git_am -n %{pkgname}-%{version}
+%autosetup -S git_am -n %{pkgname}-%{?gitdate:%{commit}}%{!?gitdate:%{version}}
 
 %build
 %meson \
 	%{?gitdate:-Dxwayland=true -D{xorg,xnest,xvfb,udev}=false} \
-        -Dxwayland_eglstream=true \
         -Ddefault_font_path=%{default_font_path} \
         -Dbuilder_string="Build ID: %{name} %{version}-%{release}" \
         -Dxkb_output_dir=%{_localstatedir}/lib/xkb \
+        -Dserverconfigdir=%{_datadir}/xwayland \
         -Dxcsecurity=true \
         -Dglamor=true \
         -Ddri3=true \
@@ -117,18 +123,18 @@ necessary for developing Wayland compositors using Xwayland.
 
 # Remove unwanted files/dirs
 rm $RPM_BUILD_ROOT%{_mandir}/man1/Xserver.1*
-rm -Rf $RPM_BUILD_ROOT%{_libdir}/xorg
 rm -Rf $RPM_BUILD_ROOT%{_includedir}/xorg
 rm -Rf $RPM_BUILD_ROOT%{_datadir}/aclocal
-rm -Rf $RPM_BUILD_ROOT%{_localstatedir}/lib/xkb
 
 %check
 desktop-file-validate %{buildroot}%{_datadir}/applications/*.desktop
 
 %files
+%dir %{_datadir}/xwayland
 %{_bindir}/Xwayland
 %{_mandir}/man1/Xwayland.1*
 %{_datadir}/applications/org.freedesktop.Xwayland.desktop
+%{_datadir}/xwayland/protocol.txt
 
 %files devel
 %{_libdir}/pkgconfig/xwayland.pc
