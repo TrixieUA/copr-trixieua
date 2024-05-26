@@ -5,7 +5,7 @@
 
 
 Name:           gnome-shell
-Version:        46.1
+Version:        46.2
 Release:        10.clang%{?dist}
 Summary:        Window management and application launching for GNOME
 
