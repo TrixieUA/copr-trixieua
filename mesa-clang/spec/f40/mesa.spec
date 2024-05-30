@@ -71,7 +71,7 @@ Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 24.1.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        10%{?dist}
+Release:        11%{?dist}
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
 URL:            http://www.mesa3d.org
 
@@ -433,6 +433,7 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dgallium-rusticl=true \
 %endif
   -Dvulkan-drivers=%{?vulkan_drivers} \
+  -Dvideo-codecs=h264dec,h264enc,h265dec,h265enc,vc1dec \
   -Dvulkan-layers=device-select \
   -Dshared-glapi=enabled \
   -Dgles1=enabled \
