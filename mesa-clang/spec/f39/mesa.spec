@@ -64,9 +64,9 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.0.8
+%global ver 24.0.9
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
-Release:        12.clang%{?dist}
+Release:        10.clang%{?dist}
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
 URL:            http://www.mesa3d.org
 
