@@ -15,7 +15,7 @@
 %global tarball_version %{version}
 
 Name:          mutter
-Version:       46.3
+Version:       46.3.1
 Release:       10.patched%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
