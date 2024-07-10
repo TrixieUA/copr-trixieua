@@ -15,8 +15,8 @@
 %global tarball_version %{version}
 
 Name:          mutter
-Version:       46.2
-Release:       11.patched%{?dist}
+Version:       46.3
+Release:       10.patched%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 License:       GPLv2+
