@@ -1,12 +1,12 @@
-%global tarball_version %{version}
-%global major_version 46
-%define _disable_source_fetch 0
 %global toolchain clang
+%define _disable_source_fetch 0
 
+%global tarball_version %%(echo %{version} | tr '~' '.')
+%global major_version %%(cut -d "." -f 1 <<<%{tarball_version})
 
 Name:           gnome-shell
-Version:        46.3
-Release:        10.clang%{?dist}
+Version:        46.3.1
+Release:        10%{?dist}.clang
 Summary:        Window management and application launching for GNOME
 
 License:        GPL-2.0-or-later
@@ -14,7 +14,7 @@ URL:            https://wiki.gnome.org/Projects/GnomeShell
 Source0:        https://download.gnome.org/sources/gnome-shell/%{major_version}/%{name}-%{tarball_version}.tar.xz
 
 # Replace Epiphany with Firefox in the default favourite apps list
-Patch:  https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/gnome-shell-favourite-apps-firefox.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/gnome-shell-favourite-apps-firefox.patch
 
 # No portal helper if WebKitGTK is not installed
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/gnome-shell/optional-portal-helper.patch
@@ -30,7 +30,7 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 %define gjs_version 1.73.1
 %define gtk4_version 4.0.0
 %define adwaita_version 1.0.0
-%define mutter_version 46~beta
+%define mutter_version 46.0
 %define polkit_version 0.100
 %define gsettings_desktop_schemas_version 46~beta
 %define ibus_version 1.5.2
@@ -39,9 +39,11 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 %define pipewire_version 0.3.0
 %define gnome_settings_daemon_version 3.37.1
 
-BuildRequires:  pkgconfig(bash-completion)
+BuildRequires:  bash-completion
 BuildRequires:  gcc
 BuildRequires:  clang
+BuildRequires:  llvm
+BuildRequires:  lld
 BuildRequires:  meson
 BuildRequires:  git
 BuildRequires:  pkgconfig(ibus-1.0) >= %{ibus_version}
@@ -175,7 +177,7 @@ easy to use experience.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-%meson -Dextensions_app=false
+%meson -Dextensions_app=false --buildtype=release
 %meson_build
 
 %install
