@@ -1,0 +1,31 @@
+From 46fea04582bb0fa0ca28a1dec8e4b8a43b950f82 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michel=20D=C3=A4nzer?= <mdaenzer@redhat.com>
+Date: Tue, 2 Jul 2024 19:39:27 +0200
+Subject: [PATCH] wayland/actor-surface: Don't bail for Xwayland surfaces
+
+Thawing Xwayland surfaces don't hit meta_window_actor_wayland_set_frozen,
+so we need to sync actor state for them here.
+
+Closes: https://gitlab.gnome.org/GNOME/mutter/-/issues/3557
+Fixes: ec5444f541a5 ("wayland/actor-surface: Don't sync actor state for frozen actors")
+---
+ src/wayland/meta-wayland-actor-surface.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/wayland/meta-wayland-actor-surface.c b/src/wayland/meta-wayland-actor-surface.c
+index ff2be9a8fc..51ad4ebf87 100644
+--- a/src/wayland/meta-wayland-actor-surface.c
++++ b/src/wayland/meta-wayland-actor-surface.c
+@@ -286,7 +286,8 @@ meta_wayland_actor_surface_sync_actor_state (MetaWaylandActorSurface *actor_surf
+   MetaWaylandActorSurfacePrivate *priv =
+     meta_wayland_actor_surface_get_instance_private (actor_surface);
+ 
+-  if (priv->actor && meta_surface_actor_is_frozen (priv->actor))
++  if (!META_IS_XWAYLAND_SURFACE (actor_surface) &&
++      priv->actor && meta_surface_actor_is_frozen (priv->actor))
+     return;
+ 
+   actor_surface_class->sync_actor_state (actor_surface);
+-- 
+GitLab
+
