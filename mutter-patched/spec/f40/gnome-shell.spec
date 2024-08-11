@@ -5,7 +5,7 @@
 %global major_version %%(cut -d "." -f 1 <<<%{tarball_version})
 
 Name:           gnome-shell
-Version:        46.3.1
+Version:        46.4
 Release:        10%{?dist}.clang
 Summary:        Window management and application launching for GNOME
 

@@ -15,7 +15,7 @@
 %global tarball_version %{version}
 
 Name:          mutter
-Version:       46.3.1
+Version:       46.4
 Release:       10.patched%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
@@ -31,12 +31,6 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 
 # https://pagure.io/fedora-workstation/issue/79
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329
-# Modified to add the change from
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837
-# which solves the problems reported with #3329 alone
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f40/mutter/0001-modified-3329.patch
 
 # Dynamic triple/double buffering (v4) 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
