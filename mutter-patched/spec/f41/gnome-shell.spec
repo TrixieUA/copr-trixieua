@@ -1,12 +1,18 @@
-%global toolchain clang
-%define _disable_source_fetch 0
-
 %global tarball_version %%(echo %{version} | tr '~' '.')
 %global major_version %%(cut -d "." -f 1 <<<%{tarball_version})
 
+%if 0%{?rhel}
+%global portal_helper 0
+%else
+%global portal_helper 1
+%endif
+
+%global toolchain clang
+%undefine _disable_source_fetch
+
 Name:           gnome-shell
-Version:        47~alpha
-Release:        10%{?dist}.clang
+Version:        47~beta
+Release:        10.patched%{dist}
 Summary:        Window management and application launching for GNOME
 
 License:        GPL-2.0-or-later
@@ -15,9 +21,6 @@ Source0:        https://download.gnome.org/sources/gnome-shell/%{major_version}/
 
 # Replace Epiphany with Firefox in the default favourite apps list
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/gnome-shell/gnome-shell-favourite-apps-firefox.patch
-
-# No portal helper if WebKitGTK is not installed
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/gnome-shell/optional-portal-helper.patch
 
 # Some users might have a broken PAM config, so we really need this
 # downstream patch to stop trying on configuration errors.
@@ -34,7 +37,7 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 %define gjs_version 1.73.1
 %define gtk4_version 4.0.0
 %define adwaita_version 1.5.0
-%define mutter_version 47~alpha
+%define mutter_version 47~beta
 %define polkit_version 0.100
 %define gsettings_desktop_schemas_version 47~alpha
 %define ibus_version 1.5.2
@@ -136,9 +139,9 @@ Requires:       xdg-desktop-portal-gnome
 # needed by the welcome dialog
 Recommends:     gnome-tour
 
-%if !0%{?rhel}
+%if %{portal_helper}
 # needed for captive portal helper
-Recommends:     webkitgtk6.0%{?_isa}
+Requires:     webkitgtk6.0%{?_isa}
 %endif
 
 # https://github.com/containers/composefs/pull/229#issuecomment-1838735764
@@ -177,7 +180,15 @@ easy to use experience.
 %autosetup -S git -n %{name}-%{tarball_version}
 
 %build
-%meson -Dextensions_app=false --buildtype=release
+%meson \
+  -Dextensions_app=false \
+  --buildtype=release \
+%if %{portal_helper}
+  -Dportal_helper=true \
+%else
+  -Dportal_helper=false \
+%endif
+  %{nil}
 %meson_build
 
 %install
@@ -192,7 +203,10 @@ mkdir -p %{buildroot}%{_datadir}/gnome-shell/search-providers
 %check
 desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.desktop
 desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Extensions.desktop
+
+%if %{portal_helper}
 desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.PortalHelper.desktop
+%endif
 
 %files -f %{name}.lang
 %license COPYING
@@ -206,7 +220,6 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Porta
 %{_datadir}/glib-2.0/schemas/00_org.gnome.shell.gschema.override
 %{_datadir}/applications/org.gnome.Shell.Extensions.desktop
 %{_datadir}/applications/org.gnome.Shell.desktop
-%{_datadir}/applications/org.gnome.Shell.PortalHelper.desktop
 %{_datadir}/bash-completion/completions/gnome-extensions
 %{_datadir}/gnome-control-center/keybindings/50-gnome-shell-launchers.xml
 %{_datadir}/gnome-control-center/keybindings/50-gnome-shell-screenshots.xml
@@ -217,7 +230,6 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Porta
 %{_datadir}/dbus-1/services/org.gnome.Shell.Extensions.service
 %{_datadir}/dbus-1/services/org.gnome.Shell.HotplugSniffer.service
 %{_datadir}/dbus-1/services/org.gnome.Shell.Notifications.service
-%{_datadir}/dbus-1/services/org.gnome.Shell.PortalHelper.service
 %{_datadir}/dbus-1/services/org.gnome.Shell.Screencast.service
 %{_datadir}/dbus-1/interfaces/org.gnome.Shell.Extensions.xml
 %{_datadir}/dbus-1/interfaces/org.gnome.Shell.Introspect.xml
@@ -226,9 +238,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Porta
 %{_datadir}/dbus-1/interfaces/org.gnome.Shell.Screenshot.xml
 %{_datadir}/dbus-1/interfaces/org.gnome.ShellSearchProvider.xml
 %{_datadir}/dbus-1/interfaces/org.gnome.ShellSearchProvider2.xml
-%{_datadir}/icons/hicolor/scalable/apps/org.gnome.Shell.CaptivePortal.svg
 %{_datadir}/icons/hicolor/scalable/apps/org.gnome.Shell.Extensions.svg
-%{_datadir}/icons/hicolor/symbolic/apps/org.gnome.Shell.CaptivePortal-symbolic.svg
 %{_datadir}/icons/hicolor/symbolic/apps/org.gnome.Shell.Extensions-symbolic.svg
 %{_userunitdir}/org.gnome.Shell-disable-extensions.service
 %{_userunitdir}/org.gnome.Shell.target
@@ -238,6 +248,13 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Porta
 %{_libexecdir}/gnome-shell-calendar-server
 %{_libexecdir}/gnome-shell-perf-helper
 %{_libexecdir}/gnome-shell-hotplug-sniffer
-%{_libexecdir}/gnome-shell-portal-helper
 %{_mandir}/man1/gnome-extensions.1*
 %{_mandir}/man1/gnome-shell.1*
+
+%if %{portal_helper}
+%{_datadir}/applications/org.gnome.Shell.PortalHelper.desktop
+%{_datadir}/dbus-1/services/org.gnome.Shell.PortalHelper.service
+%{_datadir}/icons/hicolor/scalable/apps/org.gnome.Shell.CaptivePortal.svg
+%{_datadir}/icons/hicolor/symbolic/apps/org.gnome.Shell.CaptivePortal-symbolic.svg
+%{_libexecdir}/gnome-shell-portal-helper
+%endif

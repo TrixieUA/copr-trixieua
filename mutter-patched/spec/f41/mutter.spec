@@ -1,6 +1,3 @@
-%global toolchain clang
-%global _disable_source_fetch 0
-
 %global glib_version 2.75.1
 %global gtk3_version 3.19.8
 %global gtk4_version 4.0.0
@@ -13,44 +10,41 @@
 %global mutter_api_version 15
 
 %global tarball_version %%(echo %{version} | tr '~' '.')
+%undefine _disable_source_fetch
+%global toolchain clang
 
 Name:          mutter
-Version:       47~alpha
-Release:       10%{?dist}.patched
+Version:       47~beta
+Release:       10.patched%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
-License:       GPLv2+
+# Automatically converted from old format: GPLv2+ - review is highly recommended.
+License:       GPL-2.0-or-later
 URL:           http://www.gnome.org
 Source0:       http://download.gnome.org/sources/%{name}/47/%{name}-%{tarball_version}.tar.xz
 
 # Work-around for OpenJDK's compliance test
-Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
-Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/mutter-42.alpha-disable-tegra.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/mutter-42.alpha-disable-tegra.patch
 
 # https://pagure.io/fedora-workstation/issue/79
-Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
 
-Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
 
 # https://bugzilla.redhat.com/show_bug.cgi?id=2239128
 # https://gitlab.gnome.org/GNOME/mutter/-/issues/3068
 # not upstreamed because for upstream we'd really want to find a way
 # to fix *both* problems
-Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
+Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
 
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329
-# Modified to add the change from
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3329#note_1874837
-# which solves the problems reported with #3329 alone
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-modified-3329.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3862
-# fix anaconda
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/3862.patch
-
+# Triple buffer patch
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
+# https://salsa.debian.org/gnome-team/mutter/-/blob/ubuntu/47_beta-3ubuntu4/debian/patches/debian/Support-Dynamic- triple-double-buffering.patch?ref_type=tags
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/1441.patch
+
 
 BuildRequires: clang
 BuildRequires: llvm
