@@ -1,0 +1,678 @@
+From 74917e1b07d6201beb4cd94b109ab88815122373 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Wed, 31 Jul 2024 13:46:44 +0200
+Subject: [PATCH 1/5] cogl/gl: Use g_auto (GStrv) and g_autofree in more cases
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3907>
+---
+ cogl/cogl/driver/gl/gl/cogl-driver-gl.c     |  8 ++------
+ cogl/cogl/driver/gl/gles/cogl-driver-gles.c | 10 ++--------
+ 2 files changed, 4 insertions(+), 14 deletions(-)
+
+diff --git a/cogl/cogl/driver/gl/gl/cogl-driver-gl.c b/cogl/cogl/driver/gl/gl/cogl-driver-gl.c
+index 6bc944a178f..e6fdd89bfc9 100644
+--- a/cogl/cogl/driver/gl/gl/cogl-driver-gl.c
++++ b/cogl/cogl/driver/gl/gl/cogl-driver-gl.c
+@@ -420,7 +420,7 @@ _cogl_driver_update_features (CoglContext *ctx,
+ {
+   unsigned long private_features
+     [COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_N_PRIVATE_FEATURES)] = { 0 };
+-  char **gl_extensions;
++  g_auto (GStrv) gl_extensions = 0;
+   const char *glsl_version;
+   int gl_major = 0, gl_minor = 0;
+   int i;
+@@ -445,7 +445,7 @@ _cogl_driver_update_features (CoglContext *ctx,
+ 
+   if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WINSYS)))
+     {
+-      char *all_extensions = g_strjoinv (" ", gl_extensions);
++      g_autofree char *all_extensions = g_strjoinv (" ", gl_extensions);
+ 
+       COGL_NOTE (WINSYS,
+                  "Checking features\n"
+@@ -457,8 +457,6 @@ _cogl_driver_update_features (CoglContext *ctx,
+                  ctx->glGetString (GL_RENDERER),
+                  _cogl_context_get_gl_version (ctx),
+                  all_extensions);
+-
+-      g_free (all_extensions);
+     }
+ 
+   _cogl_get_gl_version (ctx, &gl_major, &gl_minor);
+@@ -543,8 +541,6 @@ _cogl_driver_update_features (CoglContext *ctx,
+   for (i = 0; i < G_N_ELEMENTS (private_features); i++)
+     ctx->private_features[i] |= private_features[i];
+ 
+-  g_strfreev (gl_extensions);
+-
+   if (!COGL_FLAGS_GET (private_features, COGL_PRIVATE_FEATURE_TEXTURE_SWIZZLE))
+     {
+       g_set_error (error,
+diff --git a/cogl/cogl/driver/gl/gles/cogl-driver-gles.c b/cogl/cogl/driver/gl/gles/cogl-driver-gles.c
+index 770ac9fe5fb..dda16bc7365 100644
+--- a/cogl/cogl/driver/gl/gles/cogl-driver-gles.c
++++ b/cogl/cogl/driver/gl/gles/cogl-driver-gles.c
+@@ -570,7 +570,7 @@ _cogl_driver_update_features (CoglContext *context,
+ {
+   unsigned long private_features
+     [COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_N_PRIVATE_FEATURES)] = { 0 };
+-  char **gl_extensions;
++  g_auto (GStrv) gl_extensions = 0;
+   int gl_major, gl_minor;
+   int i;
+ 
+@@ -588,7 +588,7 @@ _cogl_driver_update_features (CoglContext *context,
+ 
+   if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WINSYS)))
+     {
+-      char *all_extensions = g_strjoinv (" ", gl_extensions);
++      g_autofree char *all_extensions = g_strjoinv (" ", gl_extensions);
+ 
+       COGL_NOTE (WINSYS,
+                  "Checking features\n"
+@@ -600,8 +600,6 @@ _cogl_driver_update_features (CoglContext *context,
+                  context->glGetString (GL_RENDERER),
+                  _cogl_context_get_gl_version (context),
+                  all_extensions);
+-
+-      g_free (all_extensions);
+     }
+ 
+   context->glsl_major = 1;
+@@ -620,7 +618,6 @@ _cogl_driver_update_features (CoglContext *context,
+                    COGL_DRIVER_ERROR,
+                    COGL_DRIVER_ERROR_INVALID_VERSION,
+                    "OpenGL ES 2.0 or better is required");
+-      g_strfreev (gl_extensions);
+       return FALSE;
+     }
+ 
+@@ -636,7 +633,6 @@ _cogl_driver_update_features (CoglContext *context,
+                    COGL_DRIVER_ERROR,
+                    COGL_DRIVER_ERROR_INVALID_VERSION,
+                    "GL_OES_rgb8_rgba8 is required for GLES 2");
+-      g_strfreev (gl_extensions);
+       return FALSE;
+     }
+ 
+@@ -752,8 +748,6 @@ _cogl_driver_update_features (CoglContext *context,
+   for (i = 0; i < G_N_ELEMENTS (private_features); i++)
+     context->private_features[i] |= private_features[i];
+ 
+-  g_strfreev (gl_extensions);
+-
+   return TRUE;
+ }
+ 
+-- 
+GitLab
+
+
+From e122943bcd82133146e750eec6c30951ff038b94 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Wed, 31 Jul 2024 13:55:53 +0200
+Subject: [PATCH 2/5] cogl/gl: Check GLSL version and unify GL context version
+ checks
+
+This adds a check which makes sure that the required GLSL/GLSL ES
+versions are supported.
+
+It also splits out the GLES version check into its own function, just
+like GL does.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3907>
+---
+ cogl/cogl/driver/gl/gl/cogl-driver-gl.c     |  71 +++++++++----
+ cogl/cogl/driver/gl/gles/cogl-driver-gles.c | 105 ++++++++++++++++----
+ 2 files changed, 138 insertions(+), 38 deletions(-)
+
+diff --git a/cogl/cogl/driver/gl/gl/cogl-driver-gl.c b/cogl/cogl/driver/gl/gl/cogl-driver-gl.c
+index e6fdd89bfc9..586d0728500 100644
+--- a/cogl/cogl/driver/gl/gl/cogl-driver-gl.c
++++ b/cogl/cogl/driver/gl/gl/cogl-driver-gl.c
+@@ -374,8 +374,8 @@ _cogl_driver_get_read_pixels_format (CoglContext     *context,
+ 
+ static gboolean
+ _cogl_get_gl_version (CoglContext *ctx,
+-                      int *major_out,
+-                      int *minor_out)
++                      int         *major_out,
++                      int         *minor_out)
+ {
+   const char *version_string;
+ 
+@@ -387,9 +387,8 @@ _cogl_get_gl_version (CoglContext *ctx,
+ }
+ 
+ static gboolean
+-check_gl_version (CoglContext *ctx,
+-                  char **gl_extensions,
+-                  GError **error)
++check_gl_version (CoglContext  *ctx,
++                  GError      **error)
+ {
+   int major, minor;
+ 
+@@ -415,13 +414,51 @@ check_gl_version (CoglContext *ctx,
+ }
+ 
+ static gboolean
+-_cogl_driver_update_features (CoglContext *ctx,
+-                              GError **error)
++_cogl_get_glsl_version (CoglContext *ctx,
++                        int         *major_out,
++                        int         *minor_out)
++{
++  const char *version_string;
++
++  version_string = (char *)ctx->glGetString (GL_SHADING_LANGUAGE_VERSION);
++  return _cogl_gl_util_parse_gl_version (version_string, major_out, minor_out);
++}
++
++static gboolean
++check_glsl_version (CoglContext  *ctx,
++                    GError      **error)
++{
++  int major, minor;
++
++  if (!_cogl_get_glsl_version (ctx, &major, &minor))
++    {
++      g_set_error (error,
++                   COGL_DRIVER_ERROR,
++                   COGL_DRIVER_ERROR_UNKNOWN_VERSION,
++                   "The supported GLSL version could not be determined");
++      return FALSE;
++    }
++
++  if (!COGL_CHECK_GL_VERSION (major, minor, ctx->glsl_major, ctx->glsl_minor))
++    {
++      g_set_error (error,
++                   COGL_DRIVER_ERROR,
++                   COGL_DRIVER_ERROR_INVALID_VERSION,
++                   "GLSL %d%d0 or better is required",
++                   ctx->glsl_major, ctx->glsl_minor);
++      return FALSE;
++    }
++
++  return TRUE;
++}
++
++static gboolean
++_cogl_driver_update_features (CoglContext  *ctx,
++                              GError      **error)
+ {
+   unsigned long private_features
+     [COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_N_PRIVATE_FEATURES)] = { 0 };
+   g_auto (GStrv) gl_extensions = 0;
+-  const char *glsl_version;
+   int gl_major = 0, gl_minor = 0;
+   int i;
+ 
+@@ -440,7 +477,14 @@ _cogl_driver_update_features (CoglContext *ctx,
+ 
+   gl_extensions = _cogl_context_get_gl_extensions (ctx);
+ 
+-  if (!check_gl_version (ctx, gl_extensions, error))
++  if (!check_gl_version (ctx, error))
++    return FALSE;
++
++  ctx->glsl_major = 1;
++  ctx->glsl_minor = 40;
++  ctx->glsl_version_to_use = 140;
++
++  if (!check_glsl_version (ctx, error))
+     return FALSE;
+ 
+   if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WINSYS)))
+@@ -461,15 +505,6 @@ _cogl_driver_update_features (CoglContext *ctx,
+ 
+   _cogl_get_gl_version (ctx, &gl_major, &gl_minor);
+ 
+-  ctx->glsl_major = 1;
+-  ctx->glsl_minor = 2;
+-  ctx->glsl_version_to_use = 140;
+-
+-  glsl_version = (char *)ctx->glGetString (GL_SHADING_LANGUAGE_VERSION);
+-  _cogl_gl_util_parse_gl_version (glsl_version,
+-                                  &ctx->glsl_major,
+-                                  &ctx->glsl_minor);
+-
+   COGL_FLAGS_SET (ctx->features,
+                   COGL_FEATURE_ID_UNSIGNED_INT_INDICES, TRUE);
+ 
+diff --git a/cogl/cogl/driver/gl/gles/cogl-driver-gles.c b/cogl/cogl/driver/gl/gles/cogl-driver-gles.c
+index dda16bc7365..ad8fc65bd30 100644
+--- a/cogl/cogl/driver/gl/gles/cogl-driver-gles.c
++++ b/cogl/cogl/driver/gl/gles/cogl-driver-gles.c
+@@ -565,8 +565,80 @@ _cogl_get_gl_version (CoglContext *ctx,
+ }
+ 
+ static gboolean
+-_cogl_driver_update_features (CoglContext *context,
+-                              GError **error)
++check_gl_version (CoglContext  *ctx,
++                  GError      **error)
++{
++  int major, minor;
++
++  if (!_cogl_get_gl_version (ctx, &major, &minor))
++    {
++      g_set_error (error,
++                   COGL_DRIVER_ERROR,
++                   COGL_DRIVER_ERROR_UNKNOWN_VERSION,
++                   "The GLES version could not be determined");
++      return FALSE;
++    }
++
++  if (!COGL_CHECK_GL_VERSION (major, minor, 2, 0))
++    {
++      g_set_error (error,
++                   COGL_DRIVER_ERROR,
++                   COGL_DRIVER_ERROR_INVALID_VERSION,
++                   "OpenGL ES 2.0 or better is required");
++      return FALSE;
++    }
++
++  return TRUE;
++}
++
++static gboolean
++_cogl_get_glsl_version (CoglContext *ctx,
++                        int         *major_out,
++                        int         *minor_out)
++{
++  const char *version_string;
++
++  version_string = (char *)ctx->glGetString (GL_SHADING_LANGUAGE_VERSION);
++
++  if (!g_str_has_prefix (version_string, "OpenGL ES GLSL ES "))
++    return FALSE;
++
++  return _cogl_gl_util_parse_gl_version (version_string + 18,
++                                         major_out,
++                                         minor_out);
++}
++
++static gboolean
++check_glsl_version (CoglContext  *ctx,
++                    GError      **error)
++{
++  int major, minor;
++
++  if (!_cogl_get_glsl_version (ctx, &major, &minor))
++    {
++      g_set_error (error,
++                   COGL_DRIVER_ERROR,
++                   COGL_DRIVER_ERROR_UNKNOWN_VERSION,
++                   "The supported GLSL version could not be determined");
++      return FALSE;
++    }
++
++  if (!COGL_CHECK_GL_VERSION (major, minor, ctx->glsl_major, ctx->glsl_minor))
++    {
++      g_set_error (error,
++                   COGL_DRIVER_ERROR,
++                   COGL_DRIVER_ERROR_INVALID_VERSION,
++                   "GLSL ES %d%d0 or better is required",
++                   ctx->glsl_major, ctx->glsl_minor);
++      return FALSE;
++    }
++
++  return TRUE;
++}
++
++static gboolean
++_cogl_driver_update_features (CoglContext  *context,
++                              GError      **error)
+ {
+   unsigned long private_features
+     [COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_N_PRIVATE_FEATURES)] = { 0 };
+@@ -586,6 +658,16 @@ _cogl_driver_update_features (CoglContext *context,
+ 
+   gl_extensions = _cogl_context_get_gl_extensions (context);
+ 
++  if (!check_gl_version (context, error))
++    return FALSE;
++
++  context->glsl_major = 1;
++  context->glsl_minor = 0;
++  context->glsl_version_to_use = 100;
++
++  if (!check_glsl_version (context, error))
++    return FALSE;
++
+   if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WINSYS)))
+     {
+       g_autofree char *all_extensions = g_strjoinv (" ", gl_extensions);
+@@ -602,24 +684,7 @@ _cogl_driver_update_features (CoglContext *context,
+                  all_extensions);
+     }
+ 
+-  context->glsl_major = 1;
+-  context->glsl_minor = 0;
+-  context->glsl_version_to_use = 100;
+-
+-  if (!_cogl_get_gl_version (context, &gl_major, &gl_minor))
+-    {
+-      gl_major = 1;
+-      gl_minor = 1;
+-    }
+-
+-  if (!COGL_CHECK_GL_VERSION (gl_major, gl_minor, 2, 0))
+-    {
+-      g_set_error (error,
+-                   COGL_DRIVER_ERROR,
+-                   COGL_DRIVER_ERROR_INVALID_VERSION,
+-                   "OpenGL ES 2.0 or better is required");
+-      return FALSE;
+-    }
++  _cogl_get_gl_version (context, &gl_major, &gl_minor);
+ 
+   _cogl_feature_check_ext_functions (context,
+                                      gl_major,
+-- 
+GitLab
+
+
+From 94806c98bf0ca9626926f8bcc224e1416c1e5467 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Wed, 31 Jul 2024 13:57:05 +0200
+Subject: [PATCH 3/5] cogl: Derive GLSL version from major, minor and GL vs
+ GLES
+
+The GLSL version can be derived from the major and the minor, with the
+exception that GLSL ES versions require the "es" suffix.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3907>
+---
+ cogl/cogl/cogl-context-private.h              |  9 +-------
+ .../driver/gl/cogl-pipeline-vertend-glsl.c    | 22 ++++++++++++++-----
+ cogl/cogl/driver/gl/gl/cogl-driver-gl.c       |  2 +-
+ cogl/cogl/driver/gl/gles/cogl-driver-gles.c   |  2 +-
+ 4 files changed, 19 insertions(+), 16 deletions(-)
+
+diff --git a/cogl/cogl/cogl-context-private.h b/cogl/cogl/cogl-context-private.h
+index d0017e6767f..45b641782f1 100644
+--- a/cogl/cogl/cogl-context-private.h
++++ b/cogl/cogl/cogl-context-private.h
+@@ -79,14 +79,7 @@ struct _CoglContext
+ 
+   int glsl_major;
+   int glsl_minor;
+-
+-  /* This is the GLSL version that we will claim that snippets are
+-   * written against using the #version pragma. This will be the
+-   * largest version that is less than or equal to the version
+-   * provided by the driver without massively altering the syntax. Eg,
+-   * we wouldn't use version 1.3 even if it is available because that
+-   * removes the ‘attribute’ and ‘varying’ keywords. */
+-  int glsl_version_to_use;
++  gboolean glsl_es;
+ 
+   /* Features cache */
+   unsigned long features[COGL_FLAGS_N_LONGS_FOR_SIZE (_COGL_N_FEATURE_IDS)];
+diff --git a/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c b/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c
+index 29982126339..1d23bbeb52b 100644
+--- a/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c
++++ b/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c
+@@ -188,6 +188,17 @@ add_layer_fragment_boilerplate_cb (CoglPipelineLayer *layer,
+   return TRUE;
+ }
+ 
++static char *
++glsl_version_string (CoglContext *ctx)
++{
++  gboolean needs_es_annotation = ctx->glsl_es && ctx->glsl_major > 1;
++
++  return g_strdup_printf ("%d%02d%s",
++                          ctx->glsl_major,
++                          ctx->glsl_minor,
++                          needs_es_annotation ? " es" : "");
++}
++
+ void
+ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
+                                                GLuint shader_gl_handle,
+@@ -202,16 +213,17 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
+ 
+   const char **strings = g_alloca (sizeof (char *) * (count_in + 4));
+   GLint *lengths = g_alloca (sizeof (GLint) * (count_in + 4));
+-  char *version_string;
++  g_autofree char *glsl_version = NULL;
++  g_autofree char *version_string = NULL;
+   int count = 0;
+-
+   int n_layers;
+ 
+   vertex_boilerplate = _COGL_VERTEX_SHADER_BOILERPLATE;
+   fragment_boilerplate = _COGL_FRAGMENT_SHADER_BOILERPLATE;
+ 
+-  version_string = g_strdup_printf ("#version %i\n\n",
+-                                    ctx->glsl_version_to_use);
++  glsl_version = glsl_version_string (ctx);
++  version_string = g_strdup_printf ("#version %s\n\n", glsl_version);
++
+   strings[count] = version_string;
+   lengths[count++] = -1;
+ 
+@@ -308,8 +320,6 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
+ 
+   GE( ctx, glShaderSource (shader_gl_handle, count,
+                            (const char **) strings, lengths) );
+-
+-  g_free (version_string);
+ }
+ GLuint
+ _cogl_pipeline_vertend_glsl_get_shader (CoglPipeline *pipeline)
+diff --git a/cogl/cogl/driver/gl/gl/cogl-driver-gl.c b/cogl/cogl/driver/gl/gl/cogl-driver-gl.c
+index 586d0728500..3bc20aab66f 100644
+--- a/cogl/cogl/driver/gl/gl/cogl-driver-gl.c
++++ b/cogl/cogl/driver/gl/gl/cogl-driver-gl.c
+@@ -482,7 +482,7 @@ _cogl_driver_update_features (CoglContext  *ctx,
+ 
+   ctx->glsl_major = 1;
+   ctx->glsl_minor = 40;
+-  ctx->glsl_version_to_use = 140;
++  ctx->glsl_es = FALSE;
+ 
+   if (!check_glsl_version (ctx, error))
+     return FALSE;
+diff --git a/cogl/cogl/driver/gl/gles/cogl-driver-gles.c b/cogl/cogl/driver/gl/gles/cogl-driver-gles.c
+index ad8fc65bd30..74e635a7a29 100644
+--- a/cogl/cogl/driver/gl/gles/cogl-driver-gles.c
++++ b/cogl/cogl/driver/gl/gles/cogl-driver-gles.c
+@@ -663,7 +663,7 @@ _cogl_driver_update_features (CoglContext  *context,
+ 
+   context->glsl_major = 1;
+   context->glsl_minor = 0;
+-  context->glsl_version_to_use = 100;
++  context->glsl_es = TRUE;
+ 
+   if (!check_glsl_version (context, error))
+     return FALSE;
+-- 
+GitLab
+
+
+From ea696ae4b118f7e2c7deafbf1e0dbbe95ae02b50 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Tue, 30 Jul 2024 12:46:17 +0200
+Subject: [PATCH 4/5] cogl: Repace codegen_boilerplate_buffer with a local
+ variable
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3907>
+---
+ cogl/cogl/cogl-context-private.h                 | 1 -
+ cogl/cogl/cogl-context.c                         | 1 -
+ cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c | 4 ++--
+ 3 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/cogl/cogl/cogl-context-private.h b/cogl/cogl/cogl-context-private.h
+index 45b641782f1..3ad13ea8d9a 100644
+--- a/cogl/cogl/cogl-context-private.h
++++ b/cogl/cogl/cogl-context-private.h
+@@ -119,7 +119,6 @@ struct _CoglContext
+ 
+   GString          *codegen_header_buffer;
+   GString          *codegen_source_buffer;
+-  GString          *codegen_boilerplate_buffer;
+ 
+   CoglPipelineCache *pipeline_cache;
+ 
+diff --git a/cogl/cogl/cogl-context.c b/cogl/cogl/cogl-context.c
+index eb74b6d3263..eb8683f0d0f 100644
+--- a/cogl/cogl/cogl-context.c
++++ b/cogl/cogl/cogl-context.c
+@@ -284,7 +284,6 @@ cogl_context_new (CoglDisplay *display,
+ 
+   context->codegen_header_buffer = g_string_new ("");
+   context->codegen_source_buffer = g_string_new ("");
+-  context->codegen_boilerplate_buffer = g_string_new ("");
+ 
+   context->default_gl_texture_2d_tex = NULL;
+ 
+diff --git a/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c b/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c
+index 1d23bbeb52b..033dac123d6 100644
+--- a/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c
++++ b/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c
+@@ -217,6 +217,7 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
+   g_autofree char *version_string = NULL;
+   int count = 0;
+   int n_layers;
++  g_autoptr (GString) layer_declarations = NULL;
+ 
+   vertex_boilerplate = _COGL_VERTEX_SHADER_BOILERPLATE;
+   fragment_boilerplate = _COGL_FRAGMENT_SHADER_BOILERPLATE;
+@@ -249,8 +250,7 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
+   n_layers = cogl_pipeline_get_n_layers (pipeline);
+   if (n_layers)
+     {
+-      GString *layer_declarations = ctx->codegen_boilerplate_buffer;
+-      g_string_set_size (layer_declarations, 0);
++      layer_declarations = g_string_new ("");
+ 
+       g_string_append_printf (layer_declarations,
+                               "varying vec4 _cogl_tex_coord[%d];\n",
+-- 
+GitLab
+
+
+From c5e9f028b2369f487748f730eb5a6ec0c02bacc4 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Tue, 30 Jul 2024 12:58:08 +0200
+Subject: [PATCH 5/5] cogl: Provide backwards compat for GLSL version 140
+ shaders
+
+We still use GLSL 100 syntax which means `varying`, `attribute` and
+`gl_FragColor` but GLSL 140 wants us to use `in` and `out`. This
+provides some simple `#define`s to make it still look like the GLSL 100
+syntax is supported.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3907>
+---
+ cogl/cogl/cogl-glsl-shader-boilerplate.h      |  9 +++++
+ .../driver/gl/cogl-pipeline-vertend-glsl.c    | 40 +++++++++++++------
+ 2 files changed, 37 insertions(+), 12 deletions(-)
+
+diff --git a/cogl/cogl/cogl-glsl-shader-boilerplate.h b/cogl/cogl/cogl-glsl-shader-boilerplate.h
+index f5be36b3e2d..61979fedf0a 100644
+--- a/cogl/cogl/cogl-glsl-shader-boilerplate.h
++++ b/cogl/cogl/cogl-glsl-shader-boilerplate.h
+@@ -80,3 +80,12 @@
+    * more appropriate for Cogl. */
+   "#define coglFragCoord   gl_FragCoord\n"
+ #endif
++
++#define _COGL_VERTEX_SHADER_FALLBACK_BOILERPLATE \
++  "#define attribute in\n" \
++  "#define varying out\n\n"
++
++#define _COGL_FRAGMENT_SHADER_FALLBACK_BOILERPLATE \
++  "#define varying in\n" \
++  "out vec4 _gl_FragColor;\n" \
++  "#define gl_FragColor _gl_FragColor\n\n"
+diff --git a/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c b/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c
+index 033dac123d6..1b3e1365cd1 100644
+--- a/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c
++++ b/cogl/cogl/driver/gl/cogl-pipeline-vertend-glsl.c
+@@ -36,6 +36,7 @@
+ #include <string.h>
+ 
+ #include "cogl/cogl-context-private.h"
++#include "cogl/cogl-feature-private.h"
+ #include "cogl/cogl-pipeline-private.h"
+ #include "cogl/driver/gl/cogl-util-gl-private.h"
+ #include "cogl/driver/gl/cogl-pipeline-opengl-private.h"
+@@ -199,6 +200,15 @@ glsl_version_string (CoglContext *ctx)
+                           needs_es_annotation ? " es" : "");
+ }
+ 
++static gboolean
++is_glsl140_syntax (CoglContext *ctx)
++{
++  if (ctx->glsl_es)
++    return COGL_CHECK_GL_VERSION (ctx->glsl_major, ctx->glsl_minor, 3, 0);
++
++  return COGL_CHECK_GL_VERSION (ctx->glsl_major, ctx->glsl_minor, 1, 40);
++}
++
+ void
+ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
+                                                GLuint shader_gl_handle,
+@@ -208,20 +218,14 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
+                                                const char **strings_in,
+                                                const GLint *lengths_in)
+ {
+-  const char *vertex_boilerplate;
+-  const char *fragment_boilerplate;
+-
+-  const char **strings = g_alloca (sizeof (char *) * (count_in + 4));
+-  GLint *lengths = g_alloca (sizeof (GLint) * (count_in + 4));
++  const char **strings = g_alloca (sizeof (char *) * (count_in + 5));
++  GLint *lengths = g_alloca (sizeof (GLint) * (count_in + 5));
+   g_autofree char *glsl_version = NULL;
+   g_autofree char *version_string = NULL;
+   int count = 0;
+   int n_layers;
+   g_autoptr (GString) layer_declarations = NULL;
+ 
+-  vertex_boilerplate = _COGL_VERTEX_SHADER_BOILERPLATE;
+-  fragment_boilerplate = _COGL_FRAGMENT_SHADER_BOILERPLATE;
+-
+   glsl_version = glsl_version_string (ctx);
+   version_string = g_strdup_printf ("#version %s\n\n", glsl_version);
+ 
+@@ -238,13 +242,25 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
+ 
+   if (shader_gl_type == GL_VERTEX_SHADER)
+     {
+-      strings[count] = vertex_boilerplate;
+-      lengths[count++] = strlen (vertex_boilerplate);
++      if (is_glsl140_syntax (ctx))
++        {
++          strings[count] = _COGL_VERTEX_SHADER_FALLBACK_BOILERPLATE;
++          lengths[count++] = strlen (_COGL_VERTEX_SHADER_FALLBACK_BOILERPLATE);
++        }
++
++      strings[count] = _COGL_VERTEX_SHADER_BOILERPLATE;
++      lengths[count++] = strlen (_COGL_VERTEX_SHADER_BOILERPLATE);
+     }
+   else if (shader_gl_type == GL_FRAGMENT_SHADER)
+     {
+-      strings[count] = fragment_boilerplate;
+-      lengths[count++] = strlen (fragment_boilerplate);
++      if (is_glsl140_syntax (ctx))
++        {
++          strings[count] = _COGL_FRAGMENT_SHADER_FALLBACK_BOILERPLATE;
++          lengths[count++] = strlen (_COGL_FRAGMENT_SHADER_FALLBACK_BOILERPLATE);
++        }
++
++      strings[count] = _COGL_FRAGMENT_SHADER_BOILERPLATE;
++      lengths[count++] = strlen (_COGL_FRAGMENT_SHADER_BOILERPLATE);
+     }
+ 
+   n_layers = cogl_pipeline_get_n_layers (pipeline);
+-- 
+GitLab
+
