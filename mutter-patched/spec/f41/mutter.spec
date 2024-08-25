@@ -46,7 +46,7 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/1441.patch
 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3907
-Patch: 3907.patch
+Patch:  https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/3907.patch
 
 
 BuildRequires: clang
