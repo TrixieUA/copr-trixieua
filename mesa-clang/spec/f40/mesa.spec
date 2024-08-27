@@ -9,11 +9,13 @@
 %global with_r300 1
 %global with_r600 1
 %global with_nine 1
-%global with_nvk %{with vulkan_hw}
+%if 0%{?with_vulkan_hw}
+%global with_nvk %{with_vulkan_hw}
+%endif
 %global with_omx 1
 %global with_opencl 1
 %endif
-%global base_vulkan ,amd
+%global base_vulkan %{?with_vulkan_hw:,amd}%{!?with_vulkan_hw:%{nil}}
 %endif
 
 %ifnarch %{ix86}
@@ -27,13 +29,13 @@
 %global with_i915   1
 %global with_iris   1
 %global with_xa     1
-%if !0%{?rhel}
 %global with_intel_clc 1
-%endif
-%global intel_platform_vulkan ,intel,intel_hasvk
+%global intel_platform_vulkan %{?with_vulkan_hw:,intel,intel_hasvk}%{!?with_vulkan_hw:%{nil}}
 %endif
 %ifarch x86_64
+%if !0%{?with_vulkan_hw}
 %global with_intel_vk_rt 1
+%endif
 %endif
 
 %ifarch aarch64 x86_64 %{ix86}
@@ -48,7 +50,7 @@
 %global with_tegra     1
 %global with_v3d       1
 %global with_xa        1
-%global extra_platform_vulkan ,broadcom,freedreno,panfrost,imagination-experimental
+%global extra_platform_vulkan %{?with_vulkan_hw:,broadcom,freedreno,panfrost,imagination-experimental}%{!?with_vulkan_hw:%{nil}}
 %endif
 
 %if !0%{?rhel}
@@ -65,11 +67,11 @@
 %global vulkan_drivers swrast%{?base_vulkan}%{?intel_platform_vulkan}%{?extra_platform_vulkan}%{?with_nvk:,nouveau}
 
 %global toolchain clang
-%define _disable_source_fetch 0
+%undefine _disable_source_fetch
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.1.6
+%global ver 24.2.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        10.clang%{?dist}
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
@@ -84,9 +86,9 @@ Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/me
 Patch10:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f40/gnome-shell-glthread-disable.patch
 
 BuildRequires:  meson >= 1.3.0
-BuildRequires:  clang
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
+BuildRequires:  clang
 BuildRequires:  gettext
 %if 0%{?with_hardware}
 BuildRequires:  kernel-headers
@@ -94,7 +96,7 @@ BuildRequires:  kernel-headers
 # We only check for the minimum version of pkgconfig(libdrm) needed so that the
 # SRPMs for each arch still have the same build dependencies. See:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1859515
-BuildRequires:  pkgconfig(libdrm) >= 2.4.97
+BuildRequires:  pkgconfig(libdrm) >= 2.4.119
 %if 0%{?with_libunwind}
 BuildRequires:  pkgconfig(libunwind)
 %endif
@@ -103,7 +105,7 @@ BuildRequires:  pkgconfig(zlib) >= 1.2.3
 BuildRequires:  pkgconfig(libzstd)
 BuildRequires:  pkgconfig(libselinux)
 BuildRequires:  pkgconfig(wayland-scanner)
-BuildRequires:  pkgconfig(wayland-protocols) >= 1.8
+BuildRequires:  pkgconfig(wayland-protocols) >= 1.34
 BuildRequires:  pkgconfig(wayland-client) >= 1.11
 BuildRequires:  pkgconfig(wayland-server) >= 1.11
 BuildRequires:  pkgconfig(wayland-egl-backend) >= 3
@@ -147,13 +149,15 @@ BuildRequires:  flatbuffers-devel
 BuildRequires:  flatbuffers-compiler
 BuildRequires:  xtensor-devel
 %endif
-%if 0%{?with_opencl} || 0%{?with_nvk}
+%if 0%{?with_opencl} || 0%{?with_nvk} || 0%{?with_intel_clc}
 BuildRequires:  clang-devel
-BuildRequires:  bindgen
-BuildRequires:  rust-packaging
 BuildRequires:  pkgconfig(libclc)
 BuildRequires:  pkgconfig(SPIRV-Tools)
 BuildRequires:  pkgconfig(LLVMSPIRVLib)
+%endif
+%if 0%{?with_opencl} || 0%{?with_nvk}
+BuildRequires:  bindgen
+BuildRequires:  rust-packaging
 %endif
 %if 0%{?with_nvk}
 BuildRequires:  cbindgen
@@ -172,6 +176,7 @@ BuildRequires:  python3-mako
 BuildRequires:  python3-ply
 %endif
 BuildRequires:  python3-pycparser
+BuildRequires:  python3-pyyaml
 BuildRequires:  vulkan-headers
 BuildRequires:  glslang
 %if 0%{?with_vulkan_hw}
@@ -417,8 +422,9 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dplatforms=x11,wayland \
   -Ddri3=enabled \
   -Dosmesa=true \
+  --buildtype=release \
 %if 0%{?with_hardware}
-  -Dgallium-drivers=swrast,virgl,nouveau%{?with_r300:,r300}%{?with_crocus:,crocus}%{?with_i915:,i915}%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi}%{?with_r600:,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_kmsro:,kmsro}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink} \
+  -Dgallium-drivers=swrast,virgl,nouveau%{?with_r300:,r300}%{?with_crocus:,crocus}%{?with_i915:,i915}%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi}%{?with_r600:,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink} \
 %else
   -Dgallium-drivers=swrast,virgl \
 %endif
@@ -433,7 +439,6 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dgallium-rusticl=true \
 %endif
   -Dvulkan-drivers=%{?vulkan_drivers} \
-  -Dvideo-codecs=h264dec,h264enc,h265dec,h265enc,vc1dec,vp9dec \
   -Dvulkan-layers=device-select \
   -Dshared-glapi=enabled \
   -Dgles1=enabled \
@@ -582,7 +587,9 @@ popd
 %files dri-drivers
 %dir %{_datadir}/drirc.d
 %{_datadir}/drirc.d/00-mesa-defaults.conf
+%{_libdir}/libgallium-*.so
 %{_libdir}/dri/kms_swrast_dri.so
+%{_libdir}/dri/libdril_dri.so
 %{_libdir}/dri/swrast_dri.so
 %{_libdir}/dri/virtio_gpu_dri.so
 
@@ -670,10 +677,8 @@ popd
 %{_libdir}/dri/sti_dri.so
 %{_libdir}/dri/sun4i-drm_dri.so
 %{_libdir}/dri/udl_dri.so
+%{_libdir}/dri/vkms_dri.so
 %{_libdir}/dri/zynqmp-dpsub_dri.so
-%endif
-%if 0%{?with_vulkan_hw}
-%{_libdir}/dri/zink_dri.so
 %endif
 
 %if 0%{?with_omx}
@@ -683,6 +688,7 @@ popd
 
 %if 0%{?with_va}
 %files va-drivers
+%{_libdir}/dri/libgallium_drv_video.so
 %{_libdir}/dri/nouveau_drv_video.so
 %if 0%{?with_r600}
 %{_libdir}/dri/r600_drv_video.so
@@ -695,6 +701,7 @@ popd
 
 %if 0%{?with_vdpau}
 %files vdpau-drivers
+%{_libdir}/vdpau/libvdpau_gallium.so.1*
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %if 0%{?with_r600}
 %{_libdir}/vdpau/libvdpau_r600.so.1*
