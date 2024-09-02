@@ -42,12 +42,12 @@
 %if !0%{?rhel}
 %global with_lima      1
 %global with_vc4       1
-%endif
 %global with_etnaviv   1
-%global with_freedreno 1
 %global with_kmsro     1
-%global with_panfrost  1
 %global with_tegra     1
+%endif
+%global with_freedreno 1
+%global with_panfrost  1
 %global with_v3d       1
 %global with_xa        1
 %global extra_platform_vulkan %{?with_vulkan_hw:,broadcom,freedreno,panfrost,imagination-experimental}%{!?with_vulkan_hw:%{nil}}
@@ -67,11 +67,11 @@
 %global vulkan_drivers swrast%{?base_vulkan}%{?intel_platform_vulkan}%{?extra_platform_vulkan}%{?with_nvk:,nouveau}
 
 %global toolchain clang
-%undefine _disable_source_fetch
+%define _disable_source_fetch 0
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.2.0
+%global ver 24.2.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        10.clang%{?dist}
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
@@ -439,6 +439,7 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dgallium-rusticl=true \
 %endif
   -Dvulkan-drivers=%{?vulkan_drivers} \
+  -Dvideo-codecs=h264dec,h264enc,h265dec,h265enc,vc1dec,vp9dec \
   -Dvulkan-layers=device-select \
   -Dshared-glapi=enabled \
   -Dgles1=enabled \
@@ -679,6 +680,9 @@ popd
 %{_libdir}/dri/udl_dri.so
 %{_libdir}/dri/vkms_dri.so
 %{_libdir}/dri/zynqmp-dpsub_dri.so
+%endif
+%if 0%{?with_vulkan_hw}
+%{_libdir}/dri/zink_dri.so
 %endif
 
 %if 0%{?with_omx}
