@@ -14,8 +14,8 @@
 %global toolchain clang
 
 Name:          mutter
-Version:       47~beta
-Release:       11.patched%{?dist}
+Version:       47~rc
+Release:       10.patched%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
 # Automatically converted from old format: GPLv2+ - review is highly recommended.
@@ -34,19 +34,11 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-gschema-Enable-scale-monitor-framebuffer-experimenta.patch
 
-# https://bugzilla.redhat.com/show_bug.cgi?id=2239128
-# https://gitlab.gnome.org/GNOME/mutter/-/issues/3068
-# not upstreamed because for upstream we'd really want to find a way
-# to fix *both* problems
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
 
 # Triple buffer patch
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
 # https://salsa.debian.org/gnome-team/mutter/-/blob/ubuntu/47_beta-3ubuntu4/debian/patches/debian/Support-Dynamic- triple-double-buffering.patch?ref_type=tags
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/1441.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3907
-Patch:  https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/mutter/3907.patch
 
 
 BuildRequires: clang
