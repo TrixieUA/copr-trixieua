@@ -10,7 +10,7 @@
 
 Summary:   Xwayland
 Name:      xorg-x11-server-Xwayland
-Version:   24.1.1
+Version:   24.1.2
 Release:   10.clang%{?dist}
 
 URL:       http://www.x.org
@@ -37,7 +37,6 @@ BuildRequires: desktop-file-utils
 
 BuildRequires: pkgconfig(wayland-client) >= 1.21.0
 BuildRequires: pkgconfig(wayland-protocols) >= 1.34
-BuildRequires: pkgconfig(wayland-eglstream-protocols)
 
 BuildRequires: pkgconfig(epoxy) >= 1.5.5
 BuildRequires: pkgconfig(fontenc)
