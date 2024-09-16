@@ -1,7 +1,7 @@
 %global glib_version 2.75.1
 %global gtk3_version 3.19.8
 %global gtk4_version 4.0.0
-%global gsettings_desktop_schemas_version 40~alpha
+%global gsettings_desktop_schemas_version 47~beta
 %global libinput_version 1.19.0
 %global pipewire_version 0.3.33
 %global lcms2_version 2.6
@@ -14,7 +14,7 @@
 %global toolchain clang
 
 Name:          mutter
-Version:       47~rc
+Version:       47.0
 Release:       10.patched%{?dist}
 Summary:       Window and compositing manager based on Clutter
 
