@@ -11,7 +11,7 @@
 %undefine _disable_source_fetch
 
 Name:           gnome-shell
-Version:        47.0
+Version:        47.1
 Release:        10.patched%{dist}
 Summary:        Window management and application launching for GNOME
 
@@ -75,6 +75,8 @@ BuildRequires:  pkgconfig(gtk4) >= %{gtk4_version}
 BuildRequires:  gettext >= 0.19.6
 BuildRequires:  python3
 
+# for rst2man
+BuildRequires:  python3-docutils
 # for barriers
 BuildRequires:  libXfixes-devel >= 5.0
 # used in unused BigThemeImage
@@ -213,7 +215,6 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Porta
 %doc NEWS README.md
 %{_bindir}/gnome-shell
 %{_bindir}/gnome-extensions
-%{_bindir}/gnome-shell-extension-prefs
 %{_bindir}/gnome-shell-extension-tool
 %{_bindir}/gnome-shell-test-tool
 %{_datadir}/glib-2.0/schemas/*.xml
