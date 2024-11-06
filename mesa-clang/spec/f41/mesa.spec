@@ -12,11 +12,11 @@
 %if 0%{?with_vulkan_hw}
 %global with_nvk %{with_vulkan_hw}
 %endif
-%global with_omx 1
 %global with_opencl 1
 %endif
 %global base_vulkan %{?with_vulkan_hw:,amd}%{!?with_vulkan_hw:%{nil}}
 %endif
+%define _disable_source_fetch 0
 
 %ifnarch %{ix86}
 %if !0%{?rhel}
@@ -39,15 +39,15 @@
 %endif
 
 %ifarch aarch64 x86_64 %{ix86}
+%global with_kmsro     1
 %if !0%{?rhel}
 %global with_lima      1
 %global with_vc4       1
-%endif
 %global with_etnaviv   1
-%global with_freedreno 1
-%global with_kmsro     1
-%global with_panfrost  1
 %global with_tegra     1
+%endif
+%global with_freedreno 1
+%global with_panfrost  1
 %global with_v3d       1
 %global with_xa        1
 %global extra_platform_vulkan %{?with_vulkan_hw:,broadcom,freedreno,panfrost,imagination-experimental}%{!?with_vulkan_hw:%{nil}}
@@ -65,9 +65,7 @@
 %endif
 
 %global vulkan_drivers swrast%{?base_vulkan}%{?intel_platform_vulkan}%{?extra_platform_vulkan}%{?with_nvk:,nouveau}
-
 %global toolchain clang
-%undefine _disable_source_fetch
 
 Name:           mesa
 Summary:        Mesa graphics libraries
@@ -81,9 +79,9 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
-Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f40/Mesa-MLAA-License-Clarification-Email.txt
+Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/refs/heads/main/mesa-clang/patches/f40/Mesa-MLAA-License-Clarification-Email.txt
 
-Patch10:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f40/gnome-shell-glthread-disable.patch
+Patch10:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/refs/heads/main/mesa-clang/patches/f40/gnome-shell-glthread-disable.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
@@ -96,7 +94,7 @@ BuildRequires:  kernel-headers
 # We only check for the minimum version of pkgconfig(libdrm) needed so that the
 # SRPMs for each arch still have the same build dependencies. See:
 # https://bugzilla.redhat.com/show_bug.cgi?id=1859515
-BuildRequires:  pkgconfig(libdrm) >= 2.4.119
+BuildRequires:  pkgconfig(libdrm) >= 2.4.122
 %if 0%{?with_libunwind}
 BuildRequires:  pkgconfig(libunwind)
 %endif
@@ -137,9 +135,6 @@ BuildRequires:  pkgconfig(vdpau) >= 1.1
 %endif
 %if 0%{?with_va}
 BuildRequires:  pkgconfig(libva) >= 0.38.0
-%endif
-%if 0%{?with_omx}
-BuildRequires:  pkgconfig(libomxil-bellagio)
 %endif
 BuildRequires:  pkgconfig(libelf)
 BuildRequires:  pkgconfig(libglvnd) >= 1.3.2
@@ -189,6 +184,7 @@ BuildRequires:  pkgconfig(vulkan)
 %package filesystem
 Summary:        Mesa driver filesystem
 Provides:       mesa-dri-filesystem = %{?epoch:%{epoch}:}%{version}-%{release}
+Obsoletes:      mesa-omx-drivers < %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description filesystem
 %{summary}.
@@ -244,15 +240,6 @@ Recommends:     %{name}-va-drivers%{?_isa}
 
 %description dri-drivers
 %{summary}.
-
-%if 0%{?with_omx}
-%package omx-drivers
-Summary:        Mesa-based OMX drivers
-Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
-
-%description omx-drivers
-%{summary}.
-%endif
 
 %if 0%{?with_va}
 %package        va-drivers
@@ -387,6 +374,7 @@ Requires:       %{name}-libd3d%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release
 %package vulkan-drivers
 Summary:        Mesa Vulkan drivers
 Requires:       vulkan%{_isa}
+Requires:       %{name}-filesystem%{?_isa} = %{?epoch:%{epoch}:}%{version}-%{release}
 Obsoletes:      mesa-vulkan-devel < %{?epoch:%{epoch}:}%{version}-%{release}
 
 %description vulkan-drivers
@@ -429,7 +417,6 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
   -Dgallium-drivers=swrast,virgl \
 %endif
   -Dgallium-vdpau=%{?with_vdpau:enabled}%{!?with_vdpau:disabled} \
-  -Dgallium-omx=%{?with_omx:bellagio}%{!?with_omx:disabled} \
   -Dgallium-va=%{?with_va:enabled}%{!?with_va:disabled} \
   -Dgallium-xa=%{?with_xa:enabled}%{!?with_xa:disabled} \
   -Dgallium-nine=%{?with_nine:true}%{!?with_nine:false} \
@@ -496,16 +483,13 @@ popd
 %files filesystem
 %doc docs/Mesa-MLAA-License-Clarification-Email.txt
 %dir %{_libdir}/dri
-%if 0%{?with_hardware}
-%if 0%{?with_vdpau}
-%dir %{_libdir}/vdpau
-%endif
-%endif
+%dir %{_datadir}/drirc.d
 
 %files libGL
 %{_libdir}/libGLX_mesa.so.0*
 %{_libdir}/libGLX_system.so.0*
 %files libGL-devel
+%dir %{_includedir}/GL
 %dir %{_includedir}/GL/internal
 %{_includedir}/GL/internal/dri_interface.h
 %{_libdir}/pkgconfig/dri.pc
@@ -585,7 +569,6 @@ popd
 %endif
 
 %files dri-drivers
-%dir %{_datadir}/drirc.d
 %{_datadir}/drirc.d/00-mesa-defaults.conf
 %{_libdir}/libgallium-*.so
 %{_libdir}/dri/kms_swrast_dri.so
@@ -680,15 +663,12 @@ popd
 %{_libdir}/dri/vkms_dri.so
 %{_libdir}/dri/zynqmp-dpsub_dri.so
 %endif
-
-%if 0%{?with_omx}
-%files omx-drivers
-%{_libdir}/bellagio/libomx_mesa.so
+%if 0%{?with_vulkan_hw}
+%{_libdir}/dri/zink_dri.so
 %endif
 
 %if 0%{?with_va}
 %files va-drivers
-%{_libdir}/dri/libgallium_drv_video.so
 %{_libdir}/dri/nouveau_drv_video.so
 %if 0%{?with_r600}
 %{_libdir}/dri/r600_drv_video.so
@@ -701,7 +681,7 @@ popd
 
 %if 0%{?with_vdpau}
 %files vdpau-drivers
-%{_libdir}/vdpau/libvdpau_gallium.so.1*
+%dir %{_libdir}/vdpau
 %{_libdir}/vdpau/libvdpau_nouveau.so.1*
 %if 0%{?with_r600}
 %{_libdir}/vdpau/libvdpau_r600.so.1*
