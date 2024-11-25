@@ -1,11 +1,10 @@
-%global toolchain clang
-%define _disable_source_fetch 0
-
 %global _hardened_build 1
+
+%global toolchain clang
 
 %define gtk3_version 2.99.2
 
-%global tarball_version %{version}
+%global tarball_version %%(echo %{version} | tr '~' '.')
 
 Name:           gdm
 Epoch:          1
@@ -15,8 +14,8 @@ Summary:        The GNOME Display Manager
 
 License:        GPL-2.0-or-later
 URL:            https://wiki.gnome.org/Projects/GDM
-Source0:        https://download.gnome.org/sources/gdm/46/gdm-%{tarball_version}.tar.xz
-Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/gdm/org.gnome.login-screen.gschema.override
+Source0:        https://download.gnome.org/sources/gdm/47/gdm-%{tarball_version}.tar.xz
+Source1:        org.gnome.login-screen.gschema.override
 
 # moved here from pulseaudio-gdm-hooks-11.1-16
 Source5:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/gdm/default.pa-for-gdm
@@ -24,17 +23,16 @@ Source5:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mu
 Source6:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/gdm/gdm.sysusers
 
 # Downstream patches
-Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/gdm/0001-udev-Stick-with-wayland-on-hybrid-nvidia-with-vendor.patch
 Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/gdm/0001-Honor-initial-setup-being-disabled-by-distro-install.patch
 Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/gdm/0001-data-add-system-dconf-databases-to-gdm-profile.patch
+Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f41/gdm/0001-Add-headless-session-files.patch
 
 BuildRequires:  clang
-BuildRequires:  llvm
-BuildRequires:  lld
 BuildRequires:  dconf
 BuildRequires:  desktop-file-utils
 BuildRequires:  gettext-devel
 BuildRequires:  libXdmcp-devel
+BuildRequires:  git-core
 BuildRequires:  meson
 BuildRequires:  pam-devel
 BuildRequires:  pkgconfig(accountsservice) >= 0.6.3
@@ -44,6 +42,7 @@ BuildRequires:  pkgconfig(gobject-introspection-1.0)
 BuildRequires:  pkgconfig(gtk+-3.0) >= %{gtk3_version}
 BuildRequires:  pkgconfig(gudev-1.0)
 BuildRequires:  pkgconfig(iso-codes)
+BuildRequires:  pkgconfig(json-glib-1.0)
 BuildRequires:  pkgconfig(libcanberra-gtk3)
 BuildRequires:  pkgconfig(libkeyutils)
 BuildRequires:  pkgconfig(libselinux)
@@ -52,13 +51,9 @@ BuildRequires:  pkgconfig(ply-boot-client)
 BuildRequires:  pkgconfig(systemd)
 BuildRequires:  pkgconfig(x11)
 BuildRequires:  pkgconfig(xau)
-BuildRequires:  pkgconfig(xorg-server)
 BuildRequires:  systemd-rpm-macros
 BuildRequires:  which
-BuildRequires:  xorg-x11-server-Xorg
-BuildRequires:  yelp-devel
 BuildRequires:  yelp-tools
-BuildRequires:  json-glib-devel
 
 Provides: service(graphical-login) = %{name}
 
@@ -75,11 +70,9 @@ Requires: iso-codes
 Requires: libXau >= 1.0.4-4
 Requires: pam
 Requires: /sbin/nologin
-Requires: setxkbmap
 Requires: systemd >= 186
 Requires: system-logos
-Requires: xhost xmodmap xrdb
-Requires: xorg-x11-xinit
+Requires: python3-pam
 
 # Until the greeter gets dynamic user support, it can't
 # use a user bus
@@ -95,9 +88,7 @@ functionality for logging in a user and unlocking the user's session after
 it's been locked. GDM also provides functionality for initiating user-switching,
 so more than one user can be logged in at the same time. It handles
 graphical session registration with the system for both local and remote
-sessions (in the latter case, via the XDMCP protocol).  In cases where the
-session doesn't provide it's own display server, GDM can start the display
-server on behalf of the session.
+sessions (in the latter case, via GNOME Remote Desktop and the RDP protocol).
 
 %package devel
 Summary: Development files for gdm
@@ -118,17 +109,21 @@ files that are helpful to PAM modules wishing to support
 GDM specific authentication features.
 
 %prep
-%autosetup -p1 -n gdm-%{tarball_version}
+%autosetup -S git -p1 -n gdm-%{tarball_version}
 
 %build
 %meson -Dpam-prefix=%{_sysconfdir} \
        -Drun-dir=/run/gdm \
-       -Dudev-dir=%{_udevrulesdir} \
        -Ddefault-path=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin \
+       -Ddefault-pam-config=redhat \
+       -Ddistro=redhat \
        -Dprofiling=true \
        -Dplymouth=enabled \
-       -Dselinux=enabled \
-       --buildtype=release
+       -Dselinux=enabled\
+       -Dwayland-support=true \
+       -Dx11-support=true \
+       -Dxdmcp=enabled
+
 %meson_build
 
 
@@ -142,13 +137,13 @@ mkdir -p %{buildroot}%{_sysconfdir}/gdm/PostSession
 install -p -m644 -D %{SOURCE5} %{buildroot}%{_localstatedir}/lib/gdm/.config/pulse/default.pa
 install -p -m644 -D %{SOURCE6} %{buildroot}%{_sysusersdir}/%{name}.conf
 
-rm -f %{buildroot}%{_sysconfdir}/pam.d/gdm
-
 # add logo to shell greeter
 cp -a %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 
 # docs go elsewhere
 rm -rf %{buildroot}/%{_prefix}/doc
+
+rm -f %{buildroot}/%{_udevrulesdir}/61-gdm.rules
 
 # create log dir
 mkdir -p %{buildroot}/var/log/gdm
@@ -245,16 +240,13 @@ fi
 %dir %{_sysconfdir}/dconf/db/gdm.d/locks
 %{_datadir}/glib-2.0/schemas/org.gnome.login-screen.gschema.xml
 %{_datadir}/glib-2.0/schemas/org.gnome.login-screen.gschema.override
-%{_libexecdir}/gdm-host-chooser
 %{_libexecdir}/gdm-runtime-config
 %{_libexecdir}/gdm-session-worker
-%{_libexecdir}/gdm-simple-chooser
 %{_libexecdir}/gdm-wayland-session
-%{_libexecdir}/gdm-x-session
+%{_libexecdir}/gdm-headless-login-session
 %{_sbindir}/gdm
 %{_bindir}/gdmflexiserver
 %{_bindir}/gdm-config
-%{_bindir}/gdm-screenshot
 %dir %{_datadir}/dconf
 %dir %{_datadir}/dconf/profile
 %{_datadir}/dconf/profile/gdm
@@ -280,11 +272,14 @@ fi
 %config %{_sysconfdir}/pam.d/gdm-smartcard
 %config %{_sysconfdir}/pam.d/gdm-fingerprint
 %{_sysconfdir}/pam.d/gdm-launch-environment
-%{_udevrulesdir}/61-gdm.rules
 %{_unitdir}/gdm.service
+%{_unitdir}/gnome-headless-session@.service
 %dir %{_userunitdir}/gnome-session@gnome-login.target.d/
 %{_userunitdir}/gnome-session@gnome-login.target.d/session.conf
 %{_sysusersdir}/%{name}.conf
+%{_libexecdir}/gdm-host-chooser
+%{_libexecdir}/gdm-simple-chooser
+%{_libexecdir}/gdm-x-session
 
 %files devel
 %dir %{_includedir}/gdm
