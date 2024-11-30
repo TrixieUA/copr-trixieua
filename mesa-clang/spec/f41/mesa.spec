@@ -1,3 +1,13 @@
+## START: Set by rpmautospec
+## (rpmautospec version 0.7.3)
+## RPMAUTOSPEC: autorelease, autochangelog
+%define autorelease(e:s:pb:n) %{?-p:0.}%{lua:
+    release_number = 2;
+    base_release_number = tonumber(rpm.expand("%{?-b*}%{!?-b:1}"));
+    print(release_number + base_release_number - 1);
+}%{?-e:.%{-e*}}%{?-s:.%{-s*}}%{!?-n:%{?dist}}
+## END: Set by rpmautospec
+
 %ifnarch s390x
 %global with_hardware 1
 %global with_radeonsi 1
@@ -16,7 +26,6 @@
 %endif
 %global base_vulkan %{?with_vulkan_hw:,amd}%{!?with_vulkan_hw:%{nil}}
 %endif
-%define _disable_source_fetch 0
 
 %ifnarch %{ix86}
 %if !0%{?rhel}
@@ -64,12 +73,14 @@
 %bcond_with valgrind
 %endif
 
-%global vulkan_drivers swrast%{?base_vulkan}%{?intel_platform_vulkan}%{?extra_platform_vulkan}%{?with_nvk:,nouveau}
+%global vulkan_drivers swrast,virtio%{?base_vulkan}%{?intel_platform_vulkan}%{?extra_platform_vulkan}%{?with_nvk:,nouveau}
+
+%define _disable_source_fetch 0
 %global toolchain clang
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.2.7
+%global ver 24.3.0
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        10.clang%{?dist}
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
@@ -79,14 +90,16 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # src/gallium/auxiliary/postprocess/pp_mlaa* have an ... interestingly worded license.
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
-Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/refs/heads/main/mesa-clang/patches/f40/Mesa-MLAA-License-Clarification-Email.txt
+Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f41/Mesa-MLAA-License-Clarification-Email.txt
 
-Patch10:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/refs/heads/main/mesa-clang/patches/f40/gnome-shell-glthread-disable.patch
+# silence some vulkan loader issues
+Patch20:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f41/broadcom-fix-init-error.patch
+Patch21:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f41/0001-venus-handle-device-probing-properly.patch
 
 BuildRequires:  meson >= 1.3.0
+BuildRequires:  clang
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
-BuildRequires:  clang
 BuildRequires:  gettext
 %if 0%{?with_hardware}
 BuildRequires:  kernel-headers
@@ -401,16 +414,10 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
 %rewrite_wrap_file paste
 %endif
 
-# We've gotten a report that enabling LTO for mesa breaks some games. See
-# https://bugzilla.redhat.com/show_bug.cgi?id=1862771 for details.
-# Disable LTO for now
-%define _lto_cflags %{nil}
-
 %meson \
-  -Dplatforms=x11,wayland \
-  -Ddri3=enabled \
-  -Dosmesa=true \
   --buildtype=release \
+  -Dplatforms=x11,wayland \
+  -Dosmesa=true \
 %if 0%{?with_hardware}
   -Dgallium-drivers=swrast,virgl,nouveau%{?with_r300:,r300}%{?with_crocus:,crocus}%{?with_i915:,i915}%{?with_iris:,iris}%{?with_vmware:,svga}%{?with_radeonsi:,radeonsi}%{?with_r600:,r600}%{?with_freedreno:,freedreno}%{?with_etnaviv:,etnaviv}%{?with_tegra:,tegra}%{?with_vc4:,vc4}%{?with_v3d:,v3d}%{?with_lima:,lima}%{?with_panfrost:,panfrost}%{?with_vulkan_hw:,zink} \
 %else
@@ -516,6 +523,7 @@ popd
 %{_libdir}/pkgconfig/osmesa.pc
 
 %files libgbm
+%{_libdir}/gbm/dri_gbm.so
 %{_libdir}/libgbm.so.1
 %{_libdir}/libgbm.so.1.*
 %files libgbm-devel
@@ -663,9 +671,6 @@ popd
 %{_libdir}/dri/vkms_dri.so
 %{_libdir}/dri/zynqmp-dpsub_dri.so
 %endif
-%if 0%{?with_vulkan_hw}
-%{_libdir}/dri/zink_dri.so
-%endif
 
 %if 0%{?with_va}
 %files va-drivers
@@ -695,6 +700,8 @@ popd
 %files vulkan-drivers
 %{_libdir}/libvulkan_lvp.so
 %{_datadir}/vulkan/icd.d/lvp_icd.*.json
+%{_libdir}/libvulkan_virtio.so
+%{_datadir}/vulkan/icd.d/virtio_icd.*.json
 %{_libdir}/libVkLayer_MESA_device_select.so
 %{_datadir}/vulkan/implicit_layer.d/VkLayer_MESA_device_select.json
 %if 0%{?with_vulkan_hw}
@@ -722,4 +729,5 @@ popd
 %{_libdir}/libvulkan_powervr_mesa.so
 %{_datadir}/vulkan/icd.d/powervr_mesa_icd.*.json
 %endif
+%{_libdir}/dri/zink_dri.so
 %endif
