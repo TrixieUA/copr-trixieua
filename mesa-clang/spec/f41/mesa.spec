@@ -92,10 +92,6 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f41/Mesa-MLAA-License-Clarification-Email.txt
 
-# silence some vulkan loader issues
-Patch20:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f41/broadcom-fix-init-error.patch
-Patch21:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f41/0001-venus-handle-device-probing-properly.patch
-
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  clang
 BuildRequires:  gcc
