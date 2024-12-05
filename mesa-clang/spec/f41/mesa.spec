@@ -80,7 +80,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 24.3.0
+%global ver 24.3.1
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        10.clang%{?dist}
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
