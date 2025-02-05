@@ -11,7 +11,7 @@
 %undefine _disable_source_fetch
 
 Name:           gnome-shell
-Version:        47.3
+Version:        47.4
 Release:        10.patched%{dist}
 Summary:        Window management and application launching for GNOME
 
