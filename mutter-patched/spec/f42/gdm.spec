@@ -17,7 +17,7 @@ Summary:        The GNOME Display Manager
 License:        GPL-2.0-or-later
 URL:            https://wiki.gnome.org/Projects/GDM
 Source0:        https://download.gnome.org/sources/gdm/48/gdm-%{tarball_version}.tar.xz
-Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/org.gnome.login-screen.gschema.override
+Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/org.gnome.login-screen.gschema.override
 
 # moved here from pulseaudio-gdm-hooks-11.1-16
 Source5:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/default.pa-for-gdm
