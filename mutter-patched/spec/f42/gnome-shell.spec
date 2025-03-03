@@ -11,7 +11,7 @@
 %define _disable_source_fetch 0
 
 Name:           gnome-shell
-Version:        48~beta
+Version:        48~rc
 Release:        10.clang
 Summary:        Window management and application launching for GNOME
 

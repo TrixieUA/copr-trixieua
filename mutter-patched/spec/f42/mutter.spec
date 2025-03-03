@@ -15,7 +15,7 @@
 %define _disable_source_fetch 0
 
 Name:          mutter
-Version:       48~beta
+Version:       48~rc
 Release:       10.patched
 Summary:       Window and compositing manager based on Clutter
 
@@ -41,10 +41,6 @@ Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mut
 # not upstreamed because for upstream we'd really want to find a way
 # to fix *both* problems
 Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
-
-# Triple buffer
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/1441
-Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/1441.patch
 
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4249
 Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/4249.patch
