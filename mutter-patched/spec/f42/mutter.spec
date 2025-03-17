@@ -15,7 +15,7 @@
 %define _disable_source_fetch 0
 
 Name:          mutter
-Version:       48~rc
+Version:       48.0
 Release:       10.patched
 Summary:       Window and compositing manager based on Clutter
 
@@ -24,14 +24,8 @@ License:       GPL-2.0-or-later
 URL:           http://www.gnome.org
 Source0:       http://download.gnome.org/sources/%{name}/48/%{name}-%{tarball_version}.tar.xz
 
-# Work-around for OpenJDK's compliance test
-Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/0001-window-actor-Special-case-shaped-Java-windows.patch
-
 # https://bugzilla.redhat.com/show_bug.cgi?id=1936991
 Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/mutter-42.alpha-disable-tegra.patch
-
-# https://pagure.io/fedora-workstation/issue/79
-Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/0001-place-Always-center-initial-setup-fedora-welcome.patch
 
 # https://pagure.io/fedora-workstation/issue/357
 Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/0001-gschema-Enable-fractional-scaling-experimental-featu.patch
@@ -41,9 +35,6 @@ Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mut
 # not upstreamed because for upstream we'd really want to find a way
 # to fix *both* problems
 Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/0001-Revert-x11-Use-input-region-from-frame-window-for-de.patch
-
-# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4249
-Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/4249.patch
 
 
 BuildRequires: clang

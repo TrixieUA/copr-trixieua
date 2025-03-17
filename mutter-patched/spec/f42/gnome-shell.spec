@@ -11,7 +11,7 @@
 %define _disable_source_fetch 0
 
 Name:           gnome-shell
-Version:        48~rc
+Version:        48.0
 Release:        10.clang
 Summary:        Window management and application launching for GNOME
 
@@ -25,10 +25,6 @@ Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patc
 # Some users might have a broken PAM config, so we really need this
 # downstream patch to stop trying on configuration errors.
 Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gnome-shell/0001-gdm-Work-around-failing-fingerprint-auth.patch
-
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gnome-shell/0001-status-keyboard-Add-a-catch-around-reload-call.patch
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gnome-shell/0002-status-keyboard-Load-keyboard-from-system-settings-i.patch
-Patch: https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gnome-shell/0003-status-keyboard-Use-gnome-desktop-API-for-getting-de.patch
 
 
 %define eds_version 3.45.1
