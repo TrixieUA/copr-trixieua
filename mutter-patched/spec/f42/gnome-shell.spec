@@ -227,6 +227,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/org.gnome.Shell.Porta
 %{_datadir}/gnome-control-center/keybindings/50-gnome-shell-screenshots.xml
 %{_datadir}/gnome-control-center/keybindings/50-gnome-shell-system.xml
 %{_datadir}/gnome-shell/
+%{_datadir}/desktop-directories/X-GNOME-Shell-System.directory
 %{_datadir}/dbus-1/services/org.gnome.ScreenSaver.service
 %{_datadir}/dbus-1/services/org.gnome.Shell.CalendarServer.service
 %{_datadir}/dbus-1/services/org.gnome.Shell.Extensions.service
