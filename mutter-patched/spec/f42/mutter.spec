@@ -39,6 +39,8 @@ Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mut
 # https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4338
 Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/4338.patch
 
+# https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4334
+Patch:         https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/mutter/4334.patch
 
 BuildRequires: clang
 BuildRequires: llvm
