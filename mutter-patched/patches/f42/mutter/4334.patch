@@ -1,0 +1,549 @@
+From 1b0c6071268bfd7278860125867a2915533a315f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Thu, 20 Mar 2025 16:28:01 +0100
+Subject: [PATCH 1/6] clutter/frame-clock: Set frame clock state via helper
+
+This will allow us to log frame clock state changes.
+---
+ clutter/clutter/clutter-frame-clock.c | 93 ++++++++++++++++++---------
+ 1 file changed, 62 insertions(+), 31 deletions(-)
+
+diff --git a/clutter/clutter/clutter-frame-clock.c b/clutter/clutter/clutter-frame-clock.c
+index 803dc89047..10b1ce8d3b 100644
+--- a/clutter/clutter/clutter-frame-clock.c
++++ b/clutter/clutter/clutter-frame-clock.c
+@@ -165,6 +165,13 @@ static void
+ clutter_frame_clock_schedule_update_later (ClutterFrameClock *frame_clock,
+                                            int64_t            target_us);
+ 
++static void
++clutter_frame_clock_set_state (ClutterFrameClock      *frame_clock,
++                               ClutterFrameClockState  state)
++{
++  frame_clock->state = state;
++}
++
+ float
+ clutter_frame_clock_get_refresh_rate (ClutterFrameClock *frame_clock)
+ {
+@@ -595,23 +602,28 @@ clutter_frame_clock_notify_presented (ClutterFrameClock *frame_clock,
+       g_warn_if_reached ();
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_IDLE;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_IDLE);
+       maybe_reschedule_update (frame_clock);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_SCHEDULED;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED);
+       maybe_reschedule_update (frame_clock);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW);
+       maybe_reschedule_update (frame_clock);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_LATER:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_LATER;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_LATER);
+       maybe_reschedule_update (frame_clock);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_TWO:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE);
+       maybe_reschedule_update (frame_clock);
+       break;
+     }
+@@ -638,23 +650,28 @@ clutter_frame_clock_notify_ready (ClutterFrameClock *frame_clock)
+       g_warn_if_reached ();
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_IDLE;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_IDLE);
+       maybe_reschedule_update (frame_clock);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_SCHEDULED;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED);
+       maybe_reschedule_update (frame_clock);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW);
+       maybe_reschedule_update (frame_clock);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_LATER:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW);
+       maybe_reschedule_update (frame_clock);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_TWO:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE);
+       maybe_reschedule_update (frame_clock);
+       break;
+     }
+@@ -986,25 +1003,30 @@ clutter_frame_clock_inhibit (ClutterFrameClock *frame_clock)
+         case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED:
+         case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_LATER:
+           frame_clock->pending_reschedule = TRUE;
+-          frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_IDLE;
++          clutter_frame_clock_set_state (frame_clock,
++                                         CLUTTER_FRAME_CLOCK_STATE_IDLE);
+           break;
+         case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW:
+           frame_clock->pending_reschedule = TRUE;
+           frame_clock->pending_reschedule_now = TRUE;
+-          frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_IDLE;
++          clutter_frame_clock_set_state (frame_clock,
++                                         CLUTTER_FRAME_CLOCK_STATE_IDLE);
+           break;
+         case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED:
+           frame_clock->pending_reschedule = TRUE;
+-          frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE;
++          clutter_frame_clock_set_state (frame_clock,
++                                         CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE);
+           break;
+         case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW:
+           frame_clock->pending_reschedule = TRUE;
+           frame_clock->pending_reschedule_now = TRUE;
+-          frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE;
++          clutter_frame_clock_set_state (frame_clock,
++                                         CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE);
+           break;
+         case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_LATER:
+           frame_clock->pending_reschedule = TRUE;
+-          frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE;
++          clutter_frame_clock_set_state (frame_clock,
++                                         CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE);
+           break;
+         case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE:
+         case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_TWO:
+@@ -1061,21 +1083,22 @@ clutter_frame_clock_schedule_update_now (ClutterFrameClock *frame_clock)
+     case CLUTTER_FRAME_CLOCK_STATE_IDLE:
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED:
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_LATER:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW:
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW:
+       return;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED:
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_LATER:
+-      frame_clock->state =
+-        CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE:
+       if (want_triple_buffering (frame_clock))
+         {
+-          frame_clock->state =
+-            CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW;
++          clutter_frame_clock_set_state (frame_clock,
++                                         CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW);
+           break;
+         }
+       G_GNUC_FALLTHROUGH;
+@@ -1126,10 +1149,12 @@ clutter_frame_clock_schedule_update (ClutterFrameClock *frame_clock)
+     case CLUTTER_FRAME_CLOCK_STATE_INIT:
+       next_update_time_us = g_get_monotonic_time ();
+       g_source_set_ready_time (frame_clock->source, next_update_time_us);
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_SCHEDULED;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED);
+       return;
+     case CLUTTER_FRAME_CLOCK_STATE_IDLE:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_SCHEDULED;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED:
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW:
+@@ -1141,8 +1166,8 @@ clutter_frame_clock_schedule_update (ClutterFrameClock *frame_clock)
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE:
+       if (want_triple_buffering (frame_clock))
+         {
+-          frame_clock->state =
+-            CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED;
++          clutter_frame_clock_set_state (frame_clock,
++                                         CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED);
+           break;
+         }
+       G_GNUC_FALLTHROUGH;
+@@ -1272,7 +1297,7 @@ clutter_frame_clock_schedule_update_later (ClutterFrameClock *frame_clock,
+ 
+   g_source_set_ready_time (frame_clock->source, ready_time_us);
+   frame_clock->pending_reschedule = TRUE;
+-  frame_clock->state = next_state;
++  clutter_frame_clock_set_state (frame_clock, next_state);
+ }
+ 
+ static int
+@@ -1320,22 +1345,26 @@ clutter_frame_clock_set_mode (ClutterFrameClock     *frame_clock,
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED:
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_LATER:
+       frame_clock->pending_reschedule = TRUE;
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_IDLE;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_IDLE);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW:
+       frame_clock->pending_reschedule = TRUE;
+       frame_clock->pending_reschedule_now = TRUE;
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_IDLE;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_IDLE);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED:
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_LATER:
+       frame_clock->pending_reschedule = TRUE;
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW:
+       frame_clock->pending_reschedule = TRUE;
+       frame_clock->pending_reschedule_now = TRUE;
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE);
+       break;
+     }
+ 
+@@ -1379,12 +1408,14 @@ clutter_frame_clock_dispatch (ClutterFrameClock *frame_clock,
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED:
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW:
+     case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_LATER:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED:
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW:
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_LATER:
+-      frame_clock->state = CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_TWO;
++      clutter_frame_clock_set_state (frame_clock,
++                                     CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_TWO);
+       break;
+     }
+ 
+-- 
+GitLab
+
+
+From afea9c14c34ae06d98cb9714f4084b61cb02910b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Thu, 20 Mar 2025 16:28:40 +0100
+Subject: [PATCH 2/6] clutter/frame-clock: Add more debug logging
+
+Log when dispatching, dispatch callbacks (ready / presented), and all
+state changes. This greatly improves debugability of the frame clock
+state machine.
+---
+ clutter/clutter/clutter-frame-clock.c | 44 +++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/clutter/clutter/clutter-frame-clock.c b/clutter/clutter/clutter-frame-clock.c
+index 10b1ce8d3b..4e4238975d 100644
+--- a/clutter/clutter/clutter-frame-clock.c
++++ b/clutter/clutter/clutter-frame-clock.c
+@@ -165,10 +165,43 @@ static void
+ clutter_frame_clock_schedule_update_later (ClutterFrameClock *frame_clock,
+                                            int64_t            target_us);
+ 
++static const char *
++clutter_frame_clock_state_to_string (ClutterFrameClockState state)
++{
++  switch (state)
++    {
++    case CLUTTER_FRAME_CLOCK_STATE_INIT:
++      return "init";
++    case CLUTTER_FRAME_CLOCK_STATE_IDLE:
++      return "idle";
++    case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED:
++      return "scheduled";
++    case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW:
++      return "scheduled-now";
++    case CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_LATER:
++      return "scheduled-later";
++    case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE:
++      return "dispatched-one";
++    case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED:
++      return "dispatched-one-and-scheduled";
++    case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_NOW:
++      return "dispatched-one-and-scheduled-now";
++    case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_LATER:
++      return "dispatched-one-and-scheduled-later";
++    case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_TWO:
++      return "dispatched-two";
++    }
++  g_assert_not_reached ();
++}
++
+ static void
+ clutter_frame_clock_set_state (ClutterFrameClock      *frame_clock,
+                                ClutterFrameClockState  state)
+ {
++  CLUTTER_NOTE (FRAME_CLOCK, "Frame clock %s state transition: %s => %s",
++                frame_clock->output_name,
++                clutter_frame_clock_state_to_string (frame_clock->state),
++                clutter_frame_clock_state_to_string (state));
+   frame_clock->state = state;
+ }
+ 
+@@ -412,6 +445,10 @@ clutter_frame_clock_notify_presented (ClutterFrameClock *frame_clock,
+   COGL_TRACE_DESCRIBE (ClutterFrameClockNotifyPresented,
+                        frame_clock->output_name);
+ 
++  CLUTTER_NOTE (FRAME_CLOCK, "Frame %ld for %s presented",
++                frame_info->view_frame_counter,
++                frame_clock->output_name);
++
+   g_return_if_fail (frame_clock->next_presentation);
+   clear_frame (&frame_clock->prev_presentation);
+   presented_frame = frame_clock->prev_presentation =
+@@ -635,6 +672,9 @@ clutter_frame_clock_notify_ready (ClutterFrameClock *frame_clock)
+   COGL_TRACE_BEGIN_SCOPED (ClutterFrameClockNotifyReady, "Clutter::FrameClock::ready()");
+   COGL_TRACE_DESCRIBE (ClutterFrameClockNotifyReady, frame_clock->output_name);
+ 
++  CLUTTER_NOTE (FRAME_CLOCK, "Frame for %s ready",
++                frame_clock->output_name);
++
+   if (frame_clock->next_next_presentation)
+     clear_frame (&frame_clock->next_next_presentation);
+   else
+@@ -1490,6 +1530,10 @@ clutter_frame_clock_dispatch (ClutterFrameClock *frame_clock,
+   frame->has_frame_deadline = frame_clock->has_next_frame_deadline;
+   frame->frame_deadline_us = frame_clock->next_frame_deadline_us;
+ 
++  CLUTTER_NOTE (FRAME_CLOCK, "Dispatching frame %ld for %s",
++                frame->frame_count,
++                frame_clock->output_name);
++
+   COGL_TRACE_BEGIN_SCOPED (ClutterFrameClockEvents, "Clutter::FrameListener::before_frame()");
+   if (iface->before_frame)
+     iface->before_frame (frame_clock, frame, frame_clock->listener.user_data);
+-- 
+GitLab
+
+
+From 47216085b125278d7f20d44efade906eba1b2845 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Thu, 20 Mar 2025 16:30:03 +0100
+Subject: [PATCH 3/6] onscreen/native: Include connector in some debug logs
+
+This makes it easier to reason about what monitor is handled when
+debugging multi monitor issues.
+---
+ src/backends/native/meta-onscreen-native.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/src/backends/native/meta-onscreen-native.c b/src/backends/native/meta-onscreen-native.c
+index a8d7d7aa26..7ffcd7b7a8 100644
+--- a/src/backends/native/meta-onscreen-native.c
++++ b/src/backends/native/meta-onscreen-native.c
+@@ -1601,6 +1601,9 @@ maybe_post_next_frame (CoglOnscreen *onscreen)
+   MetaMonitorManager *monitor_manager =
+     meta_backend_get_monitor_manager (backend);
+   MetaOnscreenNative *onscreen_native = META_ONSCREEN_NATIVE (onscreen);
++  MetaOutputKms *output_kms = META_OUTPUT_KMS (onscreen_native->output);
++  MetaKmsConnector *kms_connector =
++    meta_output_kms_get_kms_connector (output_kms);
+   MetaPowerSave power_save_mode;
+   MetaKmsCrtc *kms_crtc;
+   MetaKmsDevice *kms_device;
+@@ -1686,9 +1689,10 @@ maybe_post_next_frame (CoglOnscreen *onscreen)
+       if (meta_renderer_native_has_pending_mode_sets (renderer_native))
+         {
+           meta_topic (META_DEBUG_KMS,
+-                      "Postponing primary plane composite update for CRTC %u (%s)",
++                      "Postponing primary plane composite update for CRTC %u (%s) to %s",
+                       meta_kms_crtc_get_id (kms_crtc),
+-                      meta_kms_device_get_path (kms_device));
++                      meta_kms_device_get_path (kms_device),
++                      meta_kms_connector_get_name (kms_connector));
+ 
+           kms_update = meta_frame_native_steal_kms_update (frame_native);
+           meta_renderer_native_queue_mode_set_update (renderer_native,
+@@ -1728,10 +1732,11 @@ maybe_post_next_frame (CoglOnscreen *onscreen)
+     }
+ 
+   meta_topic (META_DEBUG_KMS,
+-              "Posting primary plane %s update for CRTC %u (%s)",
++              "Posting primary plane %s update for CRTC %u (%s) to %s",
+               is_direct_scanout ? "direct scanout" : "composite",
+               meta_kms_crtc_get_id (kms_crtc),
+-              meta_kms_device_get_path (kms_device));
++              meta_kms_device_get_path (kms_device),
++              meta_kms_connector_get_name (kms_connector));
+ 
+   kms_update = meta_frame_native_steal_kms_update (frame_native);
+ 
+-- 
+GitLab
+
+
+From 37eac1c5b4d2f6d89166349955e6f7d2793f9097 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Thu, 13 Mar 2025 23:43:25 +0800
+Subject: [PATCH 4/6] onscreen/native: Account for all posted frames
+
+The KMS thread handles updates posted asynchronously, but it expects to
+only handle one such frame in flight from the compositor at a time. That
+means that the triple buffering state tracking in MetaOncreen, that
+keeps track of posted frames and when they become presented, must also
+account for posted frames that doesn't contain an actual primary plane
+pixel buffer.
+
+This was not the case, causing MetaOnscreenNative to post multiple
+frames to the KMS thread, which wasn't handled gracefully in certain
+situations.
+
+Before the KMS thread grows real support for it's own queue of separate
+updates, make sure we keep the contract to the KMS thread in
+MetaOnscreenNative, and only submit at most one KMS update for each CRTC
+each cycle, even when there are no actual primary plane changes.
+
+v2: Properly handle frame tracking when when KMS update empty
+---
+ src/backends/native/meta-onscreen-native.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/backends/native/meta-onscreen-native.c b/src/backends/native/meta-onscreen-native.c
+index 7ffcd7b7a8..3f3b50f83c 100644
+--- a/src/backends/native/meta-onscreen-native.c
++++ b/src/backends/native/meta-onscreen-native.c
+@@ -1675,6 +1675,7 @@ maybe_post_next_frame (CoglOnscreen *onscreen)
+     {
+       kms_update = meta_frame_native_steal_kms_update (frame_native);
+       post_nonprimary_plane_update (onscreen_native, frame, kms_update);
++      onscreen_native->posted_frame = clutter_frame_ref (frame);
+       return;
+     }
+ 
+@@ -2034,6 +2035,7 @@ finish_frame_result_feedback (const MetaKmsFeedback *kms_feedback,
+                               gpointer               user_data)
+ {
+   CoglOnscreen *onscreen = COGL_ONSCREEN (user_data);
++  MetaOnscreenNative *onscreen_native = META_ONSCREEN_NATIVE (onscreen);
+   const GError *error;
+   CoglFrameInfo *frame_info;
+ 
+@@ -2059,6 +2061,7 @@ finish_frame_result_feedback (const MetaKmsFeedback *kms_feedback,
+   frame_info->flags |= COGL_FRAME_INFO_FLAG_SYMBOLIC;
+ 
+   meta_onscreen_native_notify_frame_complete (onscreen);
++  g_clear_pointer (&onscreen_native->posted_frame, clutter_frame_unref);
+ }
+ 
+ static const MetaKmsResultListenerVtable finish_frame_result_listener_vtable = {
+@@ -2131,6 +2134,7 @@ meta_onscreen_native_finish_frame (CoglOnscreen *onscreen,
+     }
+ 
+   post_nonprimary_plane_update (onscreen_native, frame, kms_update);
++  onscreen_native->posted_frame = clutter_frame_ref (frame);
+ 
+   clutter_frame_set_result (frame, CLUTTER_FRAME_RESULT_PENDING_PRESENTED);
+ }
+-- 
+GitLab
+
+
+From b2d2b98506b524bca4924e21757e194cb712abb8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Fri, 21 Mar 2025 17:04:24 +0100
+Subject: [PATCH 5/6] Revert "kms/impl-device: Always catch pending KMS update
+ in _schedule_process"
+
+Revert this due to the KMS thread not being supposed to handle
+multiple updates per cycle.
+
+This reverts commit d6005b539ca42905dfaf1c3854540a559332b78e.
+---
+ src/backends/native/meta-kms-impl-device.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
+
+diff --git a/src/backends/native/meta-kms-impl-device.c b/src/backends/native/meta-kms-impl-device.c
+index 25cb1cbd5e..0135f22033 100644
+--- a/src/backends/native/meta-kms-impl-device.c
++++ b/src/backends/native/meta-kms-impl-device.c
+@@ -2081,8 +2081,17 @@ meta_kms_impl_device_schedule_process (MetaKmsImplDevice *impl_device,
+ 
+       if (ensure_deadline_timer_armed (impl_device, crtc_frame))
+         return;
++
++      if (crtc_frame->pending_update)
++        {
++          meta_kms_impl_device_do_process_update (impl_device, crtc_frame,
++                                                  crtc_frame->crtc,
++                                                  crtc_frame->pending_update,
++                                                  META_KMS_UPDATE_FLAG_NONE);
++        }
+     }
+-  else if (crtc_frame->pending_update)
++
++  if (crtc_frame->pending_update)
+     {
+       MetaKmsImplDevicePrivate *priv =
+         meta_kms_impl_device_get_instance_private (impl_device);
+@@ -2091,14 +2100,6 @@ meta_kms_impl_device_schedule_process (MetaKmsImplDevice *impl_device,
+                       crtc_frame->pending_update, priv->deadline_timer_state);
+     }
+ 
+-  if (crtc_frame->pending_update)
+-    {
+-      meta_kms_impl_device_do_process_update (impl_device, crtc_frame,
+-                                              crtc_frame->crtc,
+-                                              crtc_frame->pending_update,
+-                                              META_KMS_UPDATE_FLAG_NONE);
+-    }
+-
+   meta_kms_device_set_needs_flush (meta_kms_crtc_get_device (crtc), crtc);
+ }
+ 
+-- 
+GitLab
+
+
+From 26ef7d05499e71bf0775549d991621f042d9f6d3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Fri, 21 Mar 2025 17:07:01 +0100
+Subject: [PATCH 6/6] clutter/frame-clock: Don't accidentally reschedule-now
+
+The state should go from 'dispatched-one-and-scheduled-later' to
+'scheduled-later', not 'scheduled-now' when being notified about a frame
+being ready - otherwise we'll dispatch without proper pacing.
+---
+ clutter/clutter/clutter-frame-clock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/clutter/clutter/clutter-frame-clock.c b/clutter/clutter/clutter-frame-clock.c
+index 4e4238975d..6497777e06 100644
+--- a/clutter/clutter/clutter-frame-clock.c
++++ b/clutter/clutter/clutter-frame-clock.c
+@@ -706,7 +706,7 @@ clutter_frame_clock_notify_ready (ClutterFrameClock *frame_clock)
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_ONE_AND_SCHEDULED_LATER:
+       clutter_frame_clock_set_state (frame_clock,
+-                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_NOW);
++                                     CLUTTER_FRAME_CLOCK_STATE_SCHEDULED_LATER);
+       maybe_reschedule_update (frame_clock);
+       break;
+     case CLUTTER_FRAME_CLOCK_STATE_DISPATCHED_TWO:
+-- 
+GitLab
+
