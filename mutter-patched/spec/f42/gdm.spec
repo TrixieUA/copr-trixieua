@@ -10,7 +10,7 @@
 
 Name:           gdm
 Epoch:          1
-Version:        48~beta
+Version:        48.0
 Release:        10%{?dist}.clang
 Summary:        The GNOME Display Manager
 
