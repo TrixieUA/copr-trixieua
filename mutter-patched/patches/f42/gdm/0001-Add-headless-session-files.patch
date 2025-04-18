@@ -1,4 +1,4 @@
-From a8a0d952293337544da4681f0c896052eafd9d0f Mon Sep 17 00:00:00 2001
+From c87df43c15eb989b6ee5586be9e6b5fa8b31305e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
 Date: Fri, 5 Apr 2024 16:44:07 +0200
 Subject: [PATCH] Add headless session files
@@ -7,10 +7,10 @@ It consists of a python script for running the session, and a systemd
 system service template.
 ---
  data/gnome-headless-session@.service |   6 +
- data/meson.build                     |   4 +
+ data/meson.build                     |   5 +
  utils/gdm-headless-login-session     | 157 +++++++++++++++++++++++++++
  utils/meson.build                    |   5 +
- 4 files changed, 172 insertions(+)
+ 4 files changed, 173 insertions(+)
  create mode 100644 data/gnome-headless-session@.service
  create mode 100644 utils/gdm-headless-login-session
 
@@ -27,17 +27,21 @@ index 000000000..269d16288
 +ExecStart=/usr/libexec/gdm-headless-login-session --user=%i
 +Restart=on-failure
 diff --git a/data/meson.build b/data/meson.build
-index 2211e98b5..2df07cd32 100644
+index de8edd6e2..23b7a8206 100644
 --- a/data/meson.build
 +++ b/data/meson.build
-@@ -221,3 +221,7 @@ if get_option('gdm-xsession')
-     install_dir: gdmconfdir,
+@@ -224,6 +224,11 @@ if get_option('gdm-xsession') and have_x11_support
    )
  endif
-+
+ 
++# Gnome-Headless-session
 +headless_session_service = install_data('gnome-headless-session@.service',
 +    install_dir: systemd_systemunitdir,
 +  )
++
+ # Polkit
+ configure_file(
+   input: 'polkit-gdm.rules.in',
 diff --git a/utils/gdm-headless-login-session b/utils/gdm-headless-login-session
 new file mode 100644
 index 000000000..e108be523
@@ -202,10 +206,10 @@ index 000000000..e108be523
 +if __name__ == '__main__':
 +    main()
 diff --git a/utils/meson.build b/utils/meson.build
-index e4141fb13..57dd6519f 100644
+index 2cfbd1471..abd46d2b8 100644
 --- a/utils/meson.build
 +++ b/utils/meson.build
-@@ -65,3 +65,8 @@ if distro != 'none'
+@@ -50,3 +50,8 @@ if distro != 'none'
      install_dir: get_option('libexecdir'),
    )
  endif
@@ -215,5 +219,5 @@ index e4141fb13..57dd6519f 100644
 +    install_dir: get_option('libexecdir'),
 +  )
 -- 
-2.44.0
+2.48.1
 

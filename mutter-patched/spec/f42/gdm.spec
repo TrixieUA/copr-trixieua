@@ -1,42 +1,43 @@
 %global _hardened_build 1
 
-%global toolchain clang
-
 %define gtk3_version 2.99.2
+%define _disable_source_fetch 0
 
 %global tarball_version %%(echo %{version} | tr '~' '.')
-
-%define _disable_source_fetch 0
+%global toolchain clang
 
 Name:           gdm
 Epoch:          1
 Version:        48.0
-Release:        10%{?dist}.clang
+Release:        10.clang%{?dist}
 Summary:        The GNOME Display Manager
 
 License:        GPL-2.0-or-later
 URL:            https://wiki.gnome.org/Projects/GDM
 Source0:        https://download.gnome.org/sources/gdm/48/gdm-%{tarball_version}.tar.xz
-Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/org.gnome.login-screen.gschema.override
+Source1:        org.gnome.login-screen.gschema.override
 
 # moved here from pulseaudio-gdm-hooks-11.1-16
-Source5:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/default.pa-for-gdm
+Source5:        default.pa-for-gdm
 
-Source6:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/gdm.sysusers
+Source6:        gdm.sysusers
 
 # Downstream patches
-Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/0001-Honor-initial-setup-being-disabled-by-distro-install.patch
-Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/0001-data-add-system-dconf-databases-to-gdm-profile.patch
-Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/0001-Add-headless-session-files.patch
+Patch:          0001-data-Drop-X11-fallback-rules.patch
+Patch:          0001-Honor-initial-setup-being-disabled-by-distro-install.patch
+Patch:          0001-data-add-system-dconf-databases-to-gdm-profile.patch
+Patch:          0001-xorg-detect.patch
+Patch:          0001-Add-headless-session-files.patch
 
-BuildRequires:  clang
+Patch:          0001-gdm-settings-utils-rename-variable-to-fix-build-with.patch
+
 BuildRequires:  dconf
 BuildRequires:  desktop-file-utils
 BuildRequires:  gettext-devel
-BuildRequires:  libXdmcp-devel
 BuildRequires:  git-core
 BuildRequires:  meson
 BuildRequires:  pam-devel
+BuildRequires:  clang
 BuildRequires:  pkgconfig(accountsservice) >= 0.6.3
 BuildRequires:  pkgconfig(audit)
 BuildRequires:  pkgconfig(check)
@@ -60,6 +61,7 @@ BuildRequires:  yelp-tools
 Provides: service(graphical-login) = %{name}
 
 Requires: accountsservice
+Requires: dbus-common
 Requires: dconf
 # since we use it, and pam spams the log if the module is missing
 Requires: gnome-keyring-pam
@@ -74,6 +76,7 @@ Requires: pam
 Requires: /sbin/nologin
 Requires: systemd >= 186
 Requires: system-logos
+Requires: xorg-x11-xinit
 Requires: python3-pam
 
 # Until the greeter gets dynamic user support, it can't
@@ -116,6 +119,7 @@ GDM specific authentication features.
 %build
 %meson -Dpam-prefix=%{_sysconfdir} \
        -Drun-dir=/run/gdm \
+       -Ddbus-sys=%{_datadir}/dbus-1/system.d \
        -Ddefault-path=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin \
        -Ddefault-pam-config=redhat \
        -Ddistro=redhat \
@@ -124,7 +128,7 @@ GDM specific authentication features.
        -Dselinux=enabled\
        -Dwayland-support=true \
        -Dx11-support=true \
-       -Dxdmcp=enabled
+       -Dxdmcp=disabled
 
 %meson_build
 
@@ -145,12 +149,10 @@ cp -a %{SOURCE1} %{buildroot}%{_datadir}/glib-2.0/schemas
 # docs go elsewhere
 rm -rf %{buildroot}/%{_prefix}/doc
 
-rm -f %{buildroot}/%{_udevrulesdir}/61-gdm.rules
-
 # create log dir
 mkdir -p %{buildroot}/var/log/gdm
 
-(cd %{buildroot}%{_sysconfdir}/gdm; ln -sf ../X11/xinit/Xsession .)
+ln -sf ../X11/xinit/Xsession %{buildroot}%{_sysconfdir}/gdm/
 
 mkdir -p %{buildroot}%{_datadir}/gdm/autostart/LoginWindow
 
@@ -233,7 +235,7 @@ fi
 # not config files
 %{_sysconfdir}/gdm/Xsession
 %{_datadir}/gdm/gdm.schemas
-%{_sysconfdir}/dbus-1/system.d/gdm.conf
+%{_datadir}/dbus-1/system.d/gdm.conf
 %dir %{_sysconfdir}/gdm/Init
 %dir %{_sysconfdir}/gdm/PreSession
 %dir %{_sysconfdir}/gdm/PostSession
@@ -245,6 +247,7 @@ fi
 %{_libexecdir}/gdm-runtime-config
 %{_libexecdir}/gdm-session-worker
 %{_libexecdir}/gdm-wayland-session
+%{_libexecdir}/gdm-x-session
 %{_libexecdir}/gdm-headless-login-session
 %{_sbindir}/gdm
 %{_bindir}/gdmflexiserver
@@ -261,6 +264,7 @@ fi
 %{_datadir}/gdm/locale.alias
 %{_datadir}/gdm/gdb-cmd
 %{_datadir}/gnome-session/sessions/gnome-login.session
+%{_datadir}/polkit-1/rules.d/20-gdm.rules
 %{_libdir}/girepository-1.0/Gdm-1.0.typelib
 %{_libdir}/security/pam_gdm.so
 %{_libdir}/libgdm*.so*
@@ -274,14 +278,12 @@ fi
 %config %{_sysconfdir}/pam.d/gdm-smartcard
 %config %{_sysconfdir}/pam.d/gdm-fingerprint
 %{_sysconfdir}/pam.d/gdm-launch-environment
+%{_udevrulesdir}/61-gdm.rules
 %{_unitdir}/gdm.service
 %{_unitdir}/gnome-headless-session@.service
 %dir %{_userunitdir}/gnome-session@gnome-login.target.d/
 %{_userunitdir}/gnome-session@gnome-login.target.d/session.conf
 %{_sysusersdir}/%{name}.conf
-%{_libexecdir}/gdm-host-chooser
-%{_libexecdir}/gdm-simple-chooser
-%{_libexecdir}/gdm-x-session
 
 %files devel
 %dir %{_includedir}/gdm
