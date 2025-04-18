@@ -18,18 +18,18 @@ Source0:        https://download.gnome.org/sources/gdm/48/gdm-%{tarball_version}
 Source1:        org.gnome.login-screen.gschema.override
 
 # moved here from pulseaudio-gdm-hooks-11.1-16
-Source5:        default.pa-for-gdm
+Source5:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/default.pa-for-gdm
 
-Source6:        gdm.sysusers
+Source6:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/gdm.sysusers
 
 # Downstream patches
-Patch:          0001-data-Drop-X11-fallback-rules.patch
-Patch:          0001-Honor-initial-setup-being-disabled-by-distro-install.patch
-Patch:          0001-data-add-system-dconf-databases-to-gdm-profile.patch
-Patch:          0001-xorg-detect.patch
-Patch:          0001-Add-headless-session-files.patch
+Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/0001-data-Drop-X11-fallback-rules.patch
+Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/0001-Honor-initial-setup-being-disabled-by-distro-install.patch
+Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/0001-data-add-system-dconf-databases-to-gdm-profile.patch
+Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/0001-xorg-detect.patch
+Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/0001-Add-headless-session-files.patch
 
-Patch:          0001-gdm-settings-utils-rename-variable-to-fix-build-with.patch
+Patch:          https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mutter-patched/patches/f42/gdm/0001-gdm-settings-utils-rename-variable-to-fix-build-with.patch
 
 BuildRequires:  dconf
 BuildRequires:  desktop-file-utils
