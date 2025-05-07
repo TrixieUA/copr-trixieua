@@ -69,6 +69,9 @@
 
 %global vulkan_drivers swrast,virtio%{?base_vulkan}%{?intel_platform_vulkan}%{?asahi_platform_vulkan}%{?extra_platform_vulkan}%{?with_nvk:,nouveau}
 
+%define _disable_source_fetch 0
+%global toolchain clang
+
 Name:           mesa
 Summary:        Mesa graphics libraries
 %global ver 25.1.0
@@ -92,6 +95,9 @@ Patch30:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/me
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
+BuildRequires:  clang
+BuildRequires:  llvm
+BuildRequires:  lld
 BuildRequires:  gettext
 %if 0%{?with_hardware}
 BuildRequires:  kernel-headers
@@ -377,11 +383,6 @@ export MESON_PACKAGE_CACHE_DIR="%{cargo_registry}/"
 %rewrite_wrap_file unicode-ident
 %rewrite_wrap_file paste
 %endif
-
-# We've gotten a report that enabling LTO for mesa breaks some games. See
-# https://bugzilla.redhat.com/show_bug.cgi?id=1862771 for details.
-# Disable LTO for now
-%define _lto_cflags %{nil}
 
 %meson \
   -Dplatforms=x11,wayland \
