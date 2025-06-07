@@ -74,7 +74,7 @@
 
 Name:           mesa
 Summary:        Mesa graphics libraries
-%global ver 25.1.2
+%global ver 25.1.3
 Version:        %{lua:ver = string.gsub(rpm.expand("%{ver}"), "-", "~"); print(ver)}
 Release:        10.clang
 License:        MIT AND BSD-3-Clause AND SGI-B-2.0
@@ -85,12 +85,6 @@ Source0:        https://archive.mesa3d.org/mesa-%{ver}.tar.xz
 # Source1 contains email correspondence clarifying the license terms.
 # Fedora opts to ignore the optional part of clause 2 and treat that code as 2 clause BSD.
 Source1:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f42/Mesa-MLAA-License-Clarification-Email.txt
-
-# This patch makes Fedora CI fail and causes issues in QEMU. Revert it until
-# we find a fix.
-# https://bugzilla.redhat.com/show_bug.cgi?id=2360851
-# https://gitlab.freedesktop.org/mesa/mesa/-/issues/13009
-Patch30:        https://raw.githubusercontent.com/TrixieUA/copr-trixieua/main/mesa-clang/patches/f42/0001-Revert-kopper-Explicitly-choose-zink.patch
 
 BuildRequires:  meson >= 1.3.0
 BuildRequires:  gcc
