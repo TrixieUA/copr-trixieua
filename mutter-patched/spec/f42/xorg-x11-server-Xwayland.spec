@@ -10,7 +10,7 @@
 
 Summary:   Xwayland
 Name:      xorg-x11-server-Xwayland
-Version:   24.1.7
+Version:   24.1.8
 Release:   10.clang%{?dist}
 
 URL:       http://www.x.org
