@@ -15,7 +15,7 @@
 %define _disable_source_fetch 0
 
 Name:          mutter
-Version:       48.3.1
+Version:       48.4
 Release:       10.patched
 Summary:       Window and compositing manager based on Clutter
 
